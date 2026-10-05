@@ -4,7 +4,7 @@ const Store = {
     const data = localStorage.getItem('fit_track_pro');
     if (!data) {
       const initial = {
-        user: { name: "Alexandre", weight: 72, targetWeight: 70 },
+        user: { name: " ", weight: " ", targetWeight: " " },
         widgets: {
           kpi: true,
           chart: true,
@@ -51,6 +51,18 @@ const Store = {
 };
 
 const Views = {};
+    // Fonction pour associer un émoji selon le type de sport
+function getSportEmoji(sportId) {
+  const map = {
+    run: "🏃",
+    bike: "🚴",
+    swim: "🏊",
+    gym: "🏋️",
+    pilates: "🧘",
+    tennis: "🎾"
+  };
+  return map[sportId] || "🎯";
+}
 // --- PARTIE 2 : ROUTEUR & NAVIGATION ---
 function router() {
   const hash = location.hash || '#accueil';
@@ -64,6 +76,8 @@ function router() {
     Views.accueil(appContainer);
   } else if (hash === '#statistiques' && Views.statistiques) {
     Views.statistiques(appContainer);
+    } else if (hash === '#calendrier' && Views.calendrier) {
+    Views.calendrier(appContainer);
   } else {
     // Vue par défaut si la route n'existe pas encore
     appContainer.innerHTML = `
@@ -451,3 +465,79 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+// --- VUE CALENDRIER & PLANIFICATION ---
+Views.calendrier = (el) => {
+  const s = Store.get();
+  
+  el.innerHTML = `
+    <header class="page-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1>Calendrier des entraînements</h1>
+        <p>Planifiez et suivez vos séances jour par jour.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-cal-new">+ Planifier une séance</button>
+    </header>
+
+    <div class="card" style="padding: 24px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">Octobre 2026</h3>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-ghost" style="padding: 6px 12px;">&lt;</button>
+          <button class="btn btn-ghost" style="padding: 6px 12px;">&gt;</button>
+        </div>
+      </div>
+
+      <!-- Grille des jours de la semaine -->
+      <div class="cal">
+        <div class="wd">Lun</div><div class="wd">Mar</div><div class="wd">Mer</div>
+        <div class="wd">Jeu</div><div class="wd">Ven</div><div class="wd">Sam</div><div class="wd">Dim</div>
+        
+        <!-- Génération fictive des jours du mois pour l'exemple -->
+        ${Array.from({ length: 31 }, (_, i) => {
+          const dayNum = i + 1;
+          const dateStr = `2026-10-${dayNum < 10 ? '0' + dayNum : dayNum}`;
+          const daySessions = s.sessions.filter(se => se.date === dateStr);
+          
+          return `
+            <div class="day ${dayNum === 6 ? 'today' : ''}" data-date="${dateStr}">
+              <b>${dayNum}</b>
+              <div class="dots">
+                ${daySessions.map(se => `<i style="background: ${se.status === 'done' ? 'var(--done)' : 'var(--planned)'};"></i>`).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <section class="card" style="padding: 24px;">
+      <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Séances du mois</h3>
+      <div class="stack" style="gap: 12px;">
+        ${s.sessions.map(se => {
+          const sp = s.sports.find(x => x.id === se.sportId);
+          const emoji = getSportEmoji(se.sportId);
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: var(--surface);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 1.5rem;">${emoji}</span>
+                <div>
+                  <div style="font-weight: 600;">${sp ? sp.name : 'Séance'} (${se.category})</div>
+                  <div style="font-size: 0.8rem; color: var(--muted);">${se.date} · ${se.duration} min · ${se.notes || 'Aucune note'}</div>
+                </div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: ${se.status === 'done' ? 'rgba(31, 169, 113, 0.1); color: #1fa971;' : 'rgba(245, 158, 11, 0.1); color: #f59e0b;'}">
+                ${se.status === 'done' ? 'RÉALISÉE' : 'PRÉVUE'}
+              </span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+
+  el.querySelector('#btn-cal-new').onclick = () => {
+    if (typeof SessionModal !== 'undefined') {
+      SessionModal.open({ date: new Date().toISOString().split('T')[0], duration: 45, status: 'planned', sportId: s.sports[0]?.id });
+    }
+  };
+};
