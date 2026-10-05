@@ -83,10 +83,20 @@ function router() {
   // Sélection de la vue correspondante
   if (hash === '#accueil' && Views.accueil) {
     Views.accueil(appContainer);
+} else if (hash === '#calendrier' && Views.calendrier) {
+    Views.calendrier(appContainer);
+  } else if (hash === '#seances' && Views.seances) {
+    Views.seances(appContainer);
+  } else if (hash === '#records' && Views.records) {
+    Views.records(appContainer);
+  } else if (hash === '#objectifs' && Views.objectifs) {
+    Views.objectifs(appContainer);
+  } else if (hash === '#sports' && Views.sports) {
+    Views.sports(appContainer);
+  } else if (hash === '#parametres' && Views.parametres) {
+    Views.parametres(appContainer);
   } else if (hash === '#statistiques' && Views.statistiques) {
     Views.statistiques(appContainer);
-    } else if (hash === '#calendrier' && Views.calendrier) {
-    Views.calendrier(appContainer);
   } else {
     // Vue par défaut si la route n'existe pas encore
     appContainer.innerHTML = `
