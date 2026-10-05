@@ -13,28 +13,41 @@
 </head>
 <body>
   <div class="shell">
-    <!-- Menu latéral (ordinateur) : rempli par app.js -->
+    <!-- === MENU LATÉRAL (Ordinateur) === -->
     <aside class="sidebar" aria-label="Navigation principale">
       <div class="brand"><span class="brand-mark"></span>Sport Journal</div>
-      <nav id="nav-side" class="nav"></nav>
-      <button id="theme-btn" class="btn btn-ghost" type="button"></button>
+      
+      <!-- Liens du menu latéral intégrés en dur pour garantir leur affichage -->
+      <nav class="nav">
+        <a href="#accueil" class="nav-link">🏠 Accueil</a>
+        <a href="#calendrier" class="nav-link">📅 Calendrier</a>
+        <a href="#seances" class="nav-link">📋 Séances</a>
+        <a href="#records" class="nav-link">🏆 Records</a>
+        <a href="#objectifs" class="nav-link">🎯 Objectifs</a>
+        <a href="#sports" class="nav-link">⚙️ Sports & Catégories</a>
+        <a href="#parametres" class="nav-link">🛠️ Paramètres</a>
+      </nav>
+
+      <button id="theme-btn" class="btn btn-ghost" type="button">🌓 Thème</button>
     </aside>
 
-    <!-- Zone de contenu : chaque page est rendue ici -->
+    <!-- === CONTENU PRINCIPAL DE L'APPLICATION === -->
     <main id="app" class="view" tabindex="-1"></main>
 
-    <!-- Barre du bas (mobile) : rempli par app.js -->
-    <nav id="nav-tab" class="tabbar" aria-label="Navigation mobile"></nav>
+    <!-- === BARRE DE NAVIGATION MOBILE (Téléphone) === -->
+    <nav class="tabbar" aria-label="Navigation mobile">
+      <a href="#accueil" class="nav-link"><span>🏠</span><span>Accueil</span></a>
+      <a href="#calendrier" class="nav-link"><span>📅</span><span>Calendrier</span></a>
+      <a href="#seances" class="nav-link"><span>📋</span><span>Séances</span></a>
+      <a href="#objectifs" class="nav-link"><span>🎯</span><span>Objectifs</span></a>
+      <a href="#statistiques" class="nav-link"><span>📊</span><span>Stats</span></a>
+    </nav>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>      </a>
-      <a href="#calendrier" class="nav-link">
-        <span>📅</span>
-        <span>Calendrier</span>
-      </a>
       <a href="#statistiques" class="nav-link">
         <span>📊</span>
         <span>Stats</span>
