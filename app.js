@@ -64,6 +64,15 @@ function getSportEmoji(sportId) {
   return map[sportId] || "🎯";
 }
 // --- PARTIE 2 : ROUTEUR & NAVIGATION ---
+const navItems = [
+  { id: '#accueil', label: 'Accueil', icon: '🏠' },
+  { id: '#calendrier', label: 'Calendrier', icon: '📅' },
+  { id: '#seances', label: 'Séances', icon: '📋' },
+  { id: '#records', label: 'Records', icon: '🏆' },
+  { id: '#objectifs', label: 'Objectifs', icon: '🎯' },
+  { id: '#sports', label: 'Sports & Catégories', icon: '⚙️' },
+  { id: '#parametres', label: 'Paramètres', icon: '🛠️' }
+];
 function router() {
   const hash = location.hash || '#accueil';
   const appContainer = document.getElementById('app');
