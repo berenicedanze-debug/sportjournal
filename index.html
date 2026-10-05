@@ -2,33 +2,25 @@
 <html lang="fr" data-theme="auto">
 <head>
   <meta charset="UTF-8">
-  <!-- viewport-fit=cover : l'app occupe tout l'écran des téléphones à encoche -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Sport Journal</title>
-  <meta name="description" content="Carnet d'entraînement personnel, privé et hors ligne.">
-  <meta name="theme-color" content="#2F57F0">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Journal / FitTrack</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <div class="shell">
-    <!-- Menu latéral (ordinateur) : rempli par app.js -->
-    <aside class="sidebar" aria-label="Navigation principale">
-      <div class="brand"><span class="brand-mark"></span>Sport Journal</div>
-      <nav id="nav-side" class="nav"></nav>
-      <button id="theme-btn" class="btn btn-ghost" type="button"></button>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <span>Sport Journal</span>
+      </div>
+      <nav class="nav" id="nav-side"></nav>
+      <button type="button" class="btn btn-ghost" id="theme-btn" style="width: 100%; justify-content: flex-start; gap: 10px;"></button>
     </aside>
-
-    <!-- Zone de contenu : chaque page est rendue ici -->
-    <main id="view" class="view" tabindex="-1"></main>
-
-    <!-- Barre du bas (mobile) : rempli par app.js -->
-    <nav id="nav-tab" class="tabbar" aria-label="Navigation mobile"></nav>
+    <main class="view" id="view" tabindex="-1"></main>
+    <nav class="tabbar" id="nav-tab" aria-label="Navigation mobile"></nav>
   </div>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>
