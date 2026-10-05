@@ -1,5 +1,439 @@
 <!DOCTYPE html>
 <html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport Journal</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    https://fonts.googleapis.com
+    https://fonts.gstatic.com
+
+    https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap
+</head>
+
+<body>
+
+    <!-- MODALE DE BIENVENUE -->
+
+    <div id="welcomeModal" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Bienvenue sur Sport Journal</h2>
+
+            <p class="subtitle">
+                Configurez votre profil pour commencer.
+            </p>
+
+            <form id="profileForm">
+
+                <div class="form-group">
+                    <label for="userName">Nom</label>
+                    <input type="text" id="userName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userWeight">Poids (kg)</label>
+                    <input type="number" id="userWeight" min="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userGoal">Objectif sportif</label>
+                    <input type="text" id="userGoal" required>
+                </div>
+
+                <button type="submit" class="btn primary">
+                    Commencer
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- HEADER -->
+
+    <header class="main-header">
+
+        <div>
+
+            <h1>🏃 Sport Journal</h1>
+
+            <p id="welcomeText">
+                Bienvenue
+            </p>
+
+        </div>
+
+        <div class="header-actions">
+
+            <button id="themeToggle" class="btn">
+                🌙
+            </button>
+
+        </div>
+
+    </header>
+
+    <!-- NAVIGATION DESKTOP -->
+
+    <nav class="desktop-nav">
+
+        <button class="nav-btn active" data-view="dashboard">
+            Tableau de bord
+        </button>
+
+        <button class="nav-btn" data-view="calendar">
+            Calendrier
+        </button>
+
+        <button class="nav-btn" data-view="sessions">
+            Séances
+        </button>
+
+        <button class="nav-btn" data-view="goals">
+            Objectifs
+        </button>
+
+        <button class="nav-btn" data-view="stats">
+            Statistiques
+        </button>
+
+        <button class="nav-btn" data-view="settings">
+            Paramètres
+        </button>
+
+    </nav>
+
+    <!-- CONTENU PRINCIPAL -->
+
+    <main>
+
+        <!-- TABLEAU DE BORD -->
+
+        <section id="dashboard" class="view active-view">
+
+            <div class="cards-grid">
+
+                <div class="card">
+
+                    <h3>Séances</h3>
+
+                    <div id="totalSessions" class="card-value">
+                        0
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Distance totale</h3>
+
+                    <div id="totalDistance" class="card-value">
+                        0 km
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Temps cumulé</h3>
+
+                    <div id="totalDuration" class="card-value">
+                        0 min
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="panel">
+
+                <h2>Résumé général</h2>
+
+                <div id="dashboardSummary"></div>
+
+            </div>
+
+        </section>
+
+        <!-- CALENDRIER -->
+
+        <section id="calendar" class="view">
+
+            <div class="panel">
+
+                <div class="calendar-header">
+
+                    <button id="prevMonth" class="btn">
+                        ◀
+                    </button>
+
+                    <h2 id="monthYear"></h2>
+
+                    <button id="nextMonth" class="btn">
+                        ▶
+                    </button>
+
+                </div>
+
+                <div class="calendar-weekdays">
+
+                    <div>Lun</div>
+                    <div>Mar</div>
+                    <div>Mer</div>
+                    <div>Jeu</div>
+                    <div>Ven</div>
+                    <div>Sam</div>
+                    <div>Dim</div>
+
+                </div>
+
+                <div id="calendarGrid" class="calendar-grid"></div>
+
+            </div>
+
+        </section>
+
+        <!-- GESTION DES SÉANCES -->
+
+        <section id="sessions" class="view">
+
+            <div class="panel">
+
+                <div class="section-header">
+
+                    <h2>Mes séances</h2>
+
+                    <button id="addSessionBtn" class="btn primary">
+                        + Ajouter une séance
+                    </button>
+
+                </div>
+
+                <div id="sessionsContainer"></div>
+
+            </div>
+
+        </section>
+
+        <!-- OBJECTIFS -->
+
+        <section id="goals" class="view">
+
+            <div class="panel">
+
+                <h2>Mon objectif</h2>
+
+                <div id="goalDisplay"></div>
+
+            </div>
+
+        </section>
+
+        <!-- STATISTIQUES -->
+
+        <section id="stats" class="view">
+
+            <div class="panel">
+
+                <h2>Statistiques détaillées</h2>
+
+                <div id="statsContent"></div>
+
+            </div>
+
+        </section>
+
+        <!-- PARAMÈTRES -->
+
+        <section id="settings" class="view">
+
+            <div class="panel">
+
+                <h2>Mon profil</h2>
+
+                <form id="settingsForm">
+
+                    <div class="form-group">
+                        <label for="editName">Nom</label>
+                        <input type="text" id="editName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editWeight">Poids</label>
+                        <input type="number" id="editWeight" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editGoal">Objectif</label>
+                        <input type="text" id="editGoal" required>
+                    </div>
+
+                    <button type="submit" class="btn primary">
+                        Sauvegarder
+                    </button>
+
+                </form>
+
+                <hr>
+
+                <button id="resetApp" class="btn danger">
+                    Réinitialiser l'application
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODALE AJOUT / ÉDITION -->
+
+    <div id="sessionModal" class="modal">
+
+        <div class="modal-content">
+
+            <h2>Séance sportive</h2>
+
+            <form id="sessionForm">
+
+                <input type="hidden" id="sessionId">
+
+                <div class="form-group">
+
+                    <label for="sessionDate">Date</label>
+
+                    <input type="date"
+                           id="sessionDate"
+                           required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="sessionActivity">
+                        Activité
+                    </label>
+
+                    <input type="text"
+                           id="sessionActivity"
+                           placeholder="Course, vélo, natation..."
+                           required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="sessionDistance">
+                        Distance (km)
+                    </label>
+
+                    <input type="number"
+                           id="sessionDistance"
+                           step="0.1"
+                           min="0">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="sessionDuration">
+                        Durée (minutes)
+                    </label>
+
+                    <input type="number"
+                           id="sessionDuration"
+                           min="0">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="sessionStatus">
+                        Statut
+                    </label>
+
+                    <select id="sessionStatus">
+
+                        <option value="Prévue">
+                            Prévue
+                        </option>
+
+                        <option value="Réalisée">
+                            Réalisée
+                        </option>
+
+                        <option value="Annulée">
+                            Annulée
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="modal-actions">
+
+                    <button type="submit"
+                            class="btn primary">
+                        Enregistrer
+                    </button>
+
+                    <button type="button"
+                            id="closeSessionModal"
+                            class="btn">
+                        Annuler
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- NAVIGATION MOBILE -->
+
+    <nav class="mobile-nav">
+
+        <button class="nav-btn active"
+                data-view="dashboard">
+            🏠
+        </button>
+
+        <button class="nav-btn"
+                data-view="calendar">
+            📅
+        </button>
+
+        <button class="nav-btn"
+                data-view="sessions">
+            💪
+        </button>
+
+        <button class="nav-btn"
+                data-view="stats">
+            📊
+        </button>
+
+        <button class="nav-btn"
+                data-view="settings">
+            ⚙️
+        </button>
+
+    </nav>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html><!DOCTYPE html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
