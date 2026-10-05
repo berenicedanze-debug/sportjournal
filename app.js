@@ -1,5 +1,14 @@
 const APP = { storageKey: 'sportjournal:v5' };
-
+const Store = (() => {
+  const defaults = () => ({
+    version: 5,
+    profile: { name: '', weight: '', goal: '' },
+    settings: { theme: 'auto' },
+    sports: DEFAULT_SPORTS.map(name => ({ id: name.toLowerCase(), name })),
+    sessions: [],
+    goals: [],
+    cards: ['stats', 'goals', 'sessions']
+  });
 /* ==========================================================
    SPORT JOURNAL – app.js (Personnalisable & Vierge)
    ========================================================== */
