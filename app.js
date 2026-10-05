@@ -4,21 +4,21 @@ const Store = {
     const data = localStorage.getItem('fit_track_pro');
     if (!data) {
       const initial = {
-        user: { name: "Utilisateur", weight: " ", targetWeight: " " },
+        user: { name: "Utilisateur", weight: 70, targetWeight: 65 },
         widgets: { kpi: true, chart: true, upcoming: true, objectives: true, quote: true, weight: true },
         sports: [
-    { id: "run", name: "Course à pied", category: "Cardio", unit: "km", color: "#2f57f0" },
-    { id: "bike", name: "Cyclisme", category: "Cardio", unit: "km", color: "#10b981" },
-    { id: "swim", name: "Natation", category: "Cardio", unit: "m", color: "#06b6d4" },
-    { id: "gym", name: "Musculation", category: "Renforcement", unit: "kg", color: "#8b5cf6" },
-    { id: "pilates", name: "Pilate", category: "Souplesse", unit: "min", color: "#f59e0b" },
-    { id: "tennis", name: "Tennis", category: "Technique", unit: "min", color: "#ec4899" }
-  ],
-  categories: ["Cardio", "Renforcement", "Souplesse", "Compétition", "Récupération", "Technique"],
-  sessions: [], // <-- Vierge
-  objectives: [], // <-- Vierge
-  records: [] // <-- Vierge
-};
+          { id: "run", name: "Course à pied", category: "Cardio", unit: "km", color: "#2f57f0" },
+          { id: "bike", name: "Cyclisme", category: "Cardio", unit: "km", color: "#10b981" },
+          { id: "swim", name: "Natation", category: "Cardio", unit: "m", color: "#06b6d4" },
+          { id: "gym", name: "Musculation", category: "Renforcement", unit: "kg", color: "#8b5cf6" },
+          { id: "pilates", name: "Pilate", category: "Souplesse", unit: "min", color: "#f59e0b" },
+          { id: "tennis", name: "Tennis", category: "Technique", unit: "min", color: "#ec4899" }
+        ],
+        categories: ["Cardio", "Renforcement", "Souplesse", "Compétition", "Récupération", "Technique"],
+        sessions: [],      // <-- Bien vide ici
+        objectives: [],    // <-- Bien vide ici
+        records: []        // <-- Bien vide ici
+      };
       localStorage.setItem('fit_track_pro', JSON.stringify(initial));
       return initial;
     }
@@ -28,7 +28,6 @@ const Store = {
     localStorage.setItem('fit_track_pro', JSON.stringify(data));
   }
 };
-
 const Views = {};
     // Fonction pour associer un émoji selon le type de sport
 function getSportEmoji(sportId) {
@@ -591,9 +590,9 @@ Views.calendrier = (el) => {
     }
   };
 
-  // Clic sur une case spécifique du calendrier (filtrage par jour)
+// Clic sur une case spécifique du calendrier (filtrage par jour)
   el.querySelectorAll('.day-cell').forEach(cell => {
-    cell.onclick = () => {
+    cell.addEventListener('click', () => {
       const selectedDate = cell.getAttribute('data-date');
       const daySessions = s.sessions.filter(se => se.date === selectedDate);
       const titleEl = el.querySelector('#detail-title');
@@ -618,9 +617,8 @@ Views.calendrier = (el) => {
 
       container.innerHTML = daySessions.map(se => renderSessionItem(se, s)).join('');
       attachActions();
-    };
+    });
   });
-};
 // --- VUE SÉANCES (Journal complet) ---
 Views.seances = (el) => {
   const s = Store.get();
