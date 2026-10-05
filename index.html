@@ -17,18 +17,36 @@
     <!-- Menu latéral (ordinateur) : rempli par app.js -->
     <aside class="sidebar" aria-label="Navigation principale">
       <div class="brand"><span class="brand-mark"></span>Sport Journal</div>
-      <nav id="nav-side" class="nav"></nav>
-      <button id="theme-btn" class="btn btn-ghost" type="button"></button>
+      <nav id="nav-side" class="nav">
+        <!-- Liens intégrés directement pour garantir leur affichage instantané -->
+        <a href="#accueil" class="nav-link">🏠 Accueil</a>
+        <a href="#calendrier" class="nav-link">📅 Calendrier</a>
+        <a href="#statistiques" class="nav-link">📊 Statistiques</a>
+      </nav>
+      <button id="theme-btn" class="btn btn-ghost" type="button">🌓 Thème</button>
     </aside>
 
-    <!-- Zone de contenu : chaque page est rendue ici -->
-    <main id="view" class="view" tabindex="-1"></main>
+    <!-- Zone de contenu : chaque page est rendue ici (ID corrigé en "app" pour correspondre au routeur) -->
+    <main id="app" class="view" tabindex="-1"></main>
 
-    <!-- Barre du bas (mobile) : rempli par app.js -->
-    <nav id="nav-tab" class="tabbar" aria-label="Navigation mobile"></nav>
+    <!-- Barre du bas (mobile) -->
+    <nav id="nav-tab" class="tabbar" aria-label="Navigation mobile">
+      <a href="#accueil" class="nav-link">
+        <span>🏠</span>
+        <span>Accueil</span>
+      </a>
+      <a href="#calendrier" class="nav-link">
+        <span>📅</span>
+        <span>Calendrier</span>
+      </a>
+      <a href="#statistiques" class="nav-link">
+        <span>📊</span>
+        <span>Stats</span>
+      </a>
+    </nav>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
-</html></html>
+</html>
