@@ -550,3 +550,147 @@ Views.calendrier = (el) => {
     }
   };
 };
+// --- VUE SÉANCES (Journal complet) ---
+Views.seances = (el) => {
+  const s = Store.get();
+  el.innerHTML = `
+    <header class="page-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1>Journal des séances</h1>
+        <p>Retrouvez l'historique complet de tous vos entraînements.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-seance-new">+ Nouvelle séance</button>
+    </header>
+
+    <div class="list">
+      ${s.sessions.length === 0 ? `
+        <div class="card empty">
+          <p>Aucune séance enregistrée pour le moment.</p>
+        </div>
+      ` : s.sessions.map(se => {
+        const sp = s.sports.find(x => x.id === se.sportId);
+        return `
+          <div class="item" style="--c: ${sp ? sp.color : 'var(--accent)'};">
+            <div class="item-main">
+              <h3>${sp ? sp.name : 'Sport'} (${se.category})</h3>
+              <div class="tags">
+                <span>📅 ${se.date}</span>
+                <span>⏱️ ${se.duration} min</span>
+                <span>🔥 Intensité : ${se.intensity}/10</span>
+                <span>📊 Perf : ${se.performance}${sp ? sp.unit : ''}</span>
+              </div>
+              ${se.notes ? `<div class="note">${se.notes}</div>` : ''}
+            </div>
+            <div class="item-actions">
+              <span style="font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: ${se.status === 'done' ? 'rgba(31, 169, 113, 0.1); color: #1fa971;' : 'rgba(245, 158, 11, 0.1); color: #f59e0b;'}">
+                ${se.status === 'done' ? 'RÉALISÉE' : 'PRÉVUE'}
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  el.querySelector('#btn-seance-new').onclick = () => {
+    if (typeof SessionModal !== 'undefined') {
+      SessionModal.open({ date: new Date().toISOString().split('T')[0], duration: 45, status: 'planned', sportId: s.sports[0]?.id });
+    }
+  };
+};
+
+// --- VUE RECORDS ---
+Views.records = (el) => {
+  const s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>Records personnels</h1>
+      <p>Vos meilleures performances et accomplissements.</p>
+    </header>
+    <div class="stack" style="gap: 16px;">
+      ${s.records.map(rec => `
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 20px;">
+          <div>
+            <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 4px;">Établi le ${rec.date}</div>
+            <div style="font-size: 1.1rem; font-weight: 600;">${rec.title}</div>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent);">${rec.value}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+};
+
+// --- VUE OBJECTIFS ---
+Views.objectifs = (el) => {
+  const s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>Objectifs en cours</h1>
+      <p>Suivez votre progression vers vos buts sportifs.</p>
+    </header>
+    <div class="stack" style="gap: 16px;">
+      ${s.objectives.map(obj => `
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px;">
+            <span>${obj.title}</span>
+            <span>${obj.current} / ${obj.target} (${obj.progress}%)</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: ${obj.progress}%;"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+};
+
+// --- VUE SPORTS & CATÉGORIES ---
+Views.sports = (el) => {
+  const s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>Sports & Catégories</h1>
+      <p>Liste des activités prises en charge dans votre carnet.</p>
+    </header>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      ${s.sports.map(sp => `
+        <div class="card" style="padding: 20px; border-left: 5px solid ${sp.color};">
+          <h3 style="margin-bottom: 8px;">${sp.name}</h3>
+          <div style="font-size: 0.85rem; color: var(--muted);">Catégorie : ${sp.category}</div>
+          <div style="font-size: 0.85rem; color: var(--muted);">Unité de mesure : ${sp.unit}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+};
+
+// --- VUE PARAMÈTRES ---
+Views.parametres = (el) => {
+  const s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>Paramètres de l'application</h1>
+      <p>Gérez vos informations personnelles et préférences.</p>
+    </header>
+    <div class="card stack" style="padding: 24px;">
+      <div>
+        <label style="font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px;">Nom d'utilisateur</label>
+        <input type="text" id="p-name" class="input" value="${s.user.name}" style="padding: 10px; border: 1px solid var(--line); border-radius: var(--r-ctrl); width: 100%; background: var(--surface);">
+      </div>
+      <div>
+        <label style="font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px;">Poids actuel (kg)</label>
+        <input type="number" id="p-weight" class="input" value="${s.user.weight}" style="padding: 10px; border: 1px solid var(--line); border-radius: var(--r-ctrl); width: 100%; background: var(--surface);">
+      </div>
+      <button class="btn btn-primary" id="btn-save-params" style="margin-top: 12px; width: fit-content;">Enregistrer les modifications</button>
+    </div>
+  `;
+
+  el.querySelector('#btn-save-params').onclick = () => {
+    s.user.name = el.querySelector('#p-name').value;
+    s.user.weight = parseFloat(el.querySelector('#p-weight').value) || s.user.weight;
+    Store.save(s);
+    alert("Paramètres enregistrés avec succès !");
+    router();
+  };
+};
