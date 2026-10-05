@@ -17,7 +17,6 @@
     <aside class="sidebar" aria-label="Navigation principale">
       <div class="brand"><span class="brand-mark"></span>Sport Journal</div>
       
-      <!-- Liens du menu latéral intégrés en dur pour garantir leur affichage -->
       <nav class="nav">
         <a href="#accueil" class="nav-link">🏠 Accueil</a>
         <a href="#calendrier" class="nav-link">📅 Calendrier</a>
@@ -35,6 +34,19 @@
     <main id="app" class="view" tabindex="-1"></main>
 
     <!-- === BARRE DE NAVIGATION MOBILE (Téléphone) === -->
+    <nav class="tabbar" aria-label="Navigation mobile">
+      <a href="#accueil" class="nav-link"><span>🏠</span><span>Accueil</span></a>
+      <a href="#calendrier" class="nav-link"><span>📅</span><span>Calendrier</span></a>
+      <a href="#seances" class="nav-link"><span>📋</span><span>Séances</span></a>
+      <a href="#objectifs" class="nav-link"><span>🎯</span><span>Objectifs</span></a>
+      <a href="#statistiques" class="nav-link"><span>📊</span><span>Stats</span></a>
+    </nav>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>    <!-- === BARRE DE NAVIGATION MOBILE (Téléphone) === -->
     <nav class="tabbar" aria-label="Navigation mobile">
       <a href="#accueil" class="nav-link"><span>🏠</span><span>Accueil</span></a>
       <a href="#calendrier" class="nav-link"><span>📅</span><span>Calendrier</span></a>
