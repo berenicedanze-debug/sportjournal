@@ -4,12 +4,9 @@ const Store = {
     const data = localStorage.getItem('fit_track_pro');
     if (!data) {
       const initial = {
-        user: { name: " ", weight: " ", targetWeight: " " },
-       // Remplacez l'objet initial dans Store.get() par ceci :
-const initial = {
-  user: { name: "Utilisateur", weight: 70, targetWeight: 65 },
-  widgets: { kpi: true, chart: true, upcoming: true, objectives: true, quote: true, weight: true },
-  sports: [
+        user: { name: "Utilisateur", weight: " ", targetWeight: " " },
+        widgets: { kpi: true, chart: true, upcoming: true, objectives: true, quote: true, weight: true },
+        sports: [
     { id: "run", name: "Course à pied", category: "Cardio", unit: "km", color: "#2f57f0" },
     { id: "bike", name: "Cyclisme", category: "Cardio", unit: "km", color: "#10b981" },
     { id: "swim", name: "Natation", category: "Cardio", unit: "m", color: "#06b6d4" },
