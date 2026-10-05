@@ -1,66 +1,64 @@
 'use strict';
 
-/* ==========================================================
-   SPORT JOURNAL – app.js (Version propre, unifiée et sans doublon)
-   ========================================================== */
-
-const APP = { storageKey: 'sportjournal:v7' };
+const APP = { storageKey: 'sportjournal:v8' };
 
 const PAGES = [
-  { id: 'accueil',     label: 'Accueil',      icon: 'home',     sub: 'Votre tableau de bord personnel.' },
-  { id: 'calendrier',  label: 'Calendrier',   icon: 'calendar', sub: 'Planifiez et revoyez vos entraînements.' },
-  { id: 'seances',     label: 'Séances',      icon: 'run',      sub: 'Toutes vos séances, sport par sport.' },
-  { id: 'objectifs',   label: 'Objectifs',    icon: 'target',   sub: 'Fixez un cap et suivez votre progression.' },
-  { id: 'statistiques',label: 'Statistiques', icon: 'chart',    sub: 'Vos chiffres calculés automatiquement.' },
-  { id: 'records',     label: 'Records',      icon: 'trophy',   sub: 'Vos meilleures performances.' },
-  { id: 'parametres',  label: 'Paramètres',   icon: 'gear',     sub: 'Profil, sports et configuration.' }
+  { id: 'accueil', label: 'Accueil', icon: 'home', sub: 'Tableau de bord.' },
+  { id: 'parametres', label: 'Paramètres', icon: 'gear', sub: 'Configuration.' }
 ];
 
-const ICONS = {
-  home:     '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
-  calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',
-  run:      '<circle cx="14" cy="4.5" r="2"/><path d="M8 21l3-6 3 2v4M11 15l-1-5 4-2 3 4h3M6 12l4-4"/>',
-  target:   '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
-  chart:    '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-  trophy:   '<path d="M8 4h8v6a4 4 0 0 1-8 0V4zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 14v4M8 21h8"/>',
-  gear:     '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
-  plus:     '<path d="M12 5v14M5 12h14"/>',
-  left:     '<path d="M15 6l-6 6 6 6"/>',
-  right:    '<path d="M9 6l6 6-6 6"/>',
-  sun:      '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
-  moon:     '<path d="M20 14a8 8 0 1 1-10-10 6.5 6.5 0 0 0 10 10z"/>',
-  auto:     '<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/>'
-};
-const icon = (name) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
-
-const STATUS = {
-  done:      { label: 'Réalisée', css: '#1FA971' },
-  planned:   { label: 'Prévue',   css: '#F59E0B' },
-  cancelled: { label: 'Annulée',  css: '#E5484D' },
-  rest:      { label: 'Repos',    css: '#98A2B3' }
-};
-
-const EFFORTS = ['Endurance', 'Fractionné', 'Force', 'Récupération', 'Technique', 'Compétition'];
-const DEFAULT_SPORTS = ['Course à pied', 'Cyclisme', 'Natation', 'Musculation', 'Pilates', 'Yoga', 'Tennis', 'Marche'];
-
-const pad = (n) => String(n).padStart(2, '0');
-const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const todayStr = () => ymd(new Date());
-const fmtDate = (str) => new Date(str + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-const Cal = { y: new Date().getFullYear(), m: new Date().getMonth(), sel: todayStr() };
-
-/* ---------- STORE (VIERGE) ---------- */
 const Store = (() => {
   const defaults = () => ({
-    version: 7,
     profile: { name: '', weight: '', goal: '' },
     settings: { theme: 'auto' },
-    sports: DEFAULT_SPORTS.map(name => ({ id: name.toLowerCase(), name })),
-    sessions: [],
-    goals: [],
-    cards: ['stats', 'goals', 'sessions']
+    sessions: []
   });
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(APP.storageKey);
+      return raw ? { ...defaults(), ...JSON.parse(raw) } : defaults();
+    } catch (e) { return defaults(); }
+  };
+  let state = load();
+  return {
+    get: () => state,
+    update(fn) { fn(state); try { localStorage.setItem(APP.storageKey, JSON.stringify(state)); } catch(e){} }
+  };
+})();
+
+const WelcomeModal = {
+  showIfNeeded() {
+    const p = Store.get().profile;
+    if (p.name && p.name.trim() !== '') return;
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:2000;';
+    overlay.innerHTML = `
+      <div style="background:#fff; padding:30px; border-radius:12px; width:350px; color:#333;">
+        <h2>Bienvenue !</h2>
+        <form id="w-form" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+          <label>Votre Prénom : <input type="text" name="name" required style="width:100%; padding:6px; margin-top:4px;"></label>
+          <button type="submit" style="padding:8px; background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer;">Valider</button>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#w-form').onsubmit = (e) => {
+      e.preventDefault();
+      const name = e.target.name.value.trim();
+      Store.update(s => { s.profile.name = name; });
+      overlay.remove();
+      location.reload();
+    };
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const view = document.getElementById('view');
+  const p = Store.get().profile;
+  view.innerHTML = `<div style="padding:40px;"><h1>Bonjour ${p.name || ''}</h1><p>Votre journal de sport est prêt.</p></div>`;
+  WelcomeModal.showIfNeeded();
+});  });
 
   const load = () => {
     try {
