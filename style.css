@@ -222,3 +222,63 @@ select:focus, textarea:focus { border-color: var(--accent); }
   border-radius: 4px;
   transition: width 0.3s var(--ease);
 }
+/* ---------- 7. CORRECTIONS & ADAPTATIONS MOBILES SUPPLÉMENTAIRES ---------- */
+
+/* S'assure que le conteneur principal (#app) et les cartes ne dépassent jamais de l'écran mobile */
+#app {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card {
+  max-width: 100%;
+  overflow-x: auto; /* Évite qu'un tableau ou contenu large ne casse la mise en page */
+}
+
+/* Ajustement spécifique pour les petits écrans (smartphones < 600px) */
+@media (max-width: 600px) {
+  /* Réduction des marges intérieures des cartes pour gagner de l'espace utile */
+  .card {
+    padding: 16px !important;
+  }
+
+  /* Force la transformation de toutes les grilles à deux colonnes en une seule colonne */
+  div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ajustement de la taille des en-têtes de pages sur mobile */
+  .page-head h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  /* Permet aux en-têtes avec boutons d'actions de s'empiler proprement */
+  .page-head {
+    gap: 12px;
+  }
+  
+  .page-head > div:last-child {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .page-head > div:last-child .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Correction pour les modales sur mobile (plein écran tactile optimisé) */
+@media (max-width: 600px) {
+  div[style*="position: fixed"] {
+    padding: 8px !important;
+    align-items: flex-end !important; /* Fait remonter la modale du bas pour plus d'ergonomie */
+  }
+  
+  div[style*="position: fixed"] > .card {
+    max-height: 90vh;
+    overflow-y: auto;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
