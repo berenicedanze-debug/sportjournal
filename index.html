@@ -1,40 +1,33 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="auto" data-color="blue">
+<html lang="fr" data-theme="auto">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FitTrack Pro · Sport Journal Personnalisable</title>
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Sport Journal / FitTrack</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <span>Sport Journal</span>
+      </div>
+      <nav class="nav" id="nav-side"></nav>
+      <button type="button" class="btn btn-ghost" id="theme-btn" style="width: 100%; justify-content: flex-start; gap: 10px;"></button>
+    </aside>
 
-  <style>
-    :root {
-      --bg: #F8FAFC;
-      --surface: #FFFFFF;
-      --surface-subtle: #F1F5F9;
-      --ink: #0F172A;
-      --muted: #64748B;
-      --line: #E2E8F0;
-      --hover: #F8FAFC;
-      
-      --accent: #3B82F6;
-      --accent-hover: #2563EB;
-      --accent-ink: #FFFFFF;
-      --accent-soft: #EFF6FF;
-      
-      --done: #10B981;
-      --done-soft: #ECFDF5;
-      --planned: #F59E0B;
-      --planned-soft: #FFFBEB;
-      --cancelled: #EF4444;
-      --cancelled-soft: #FEF2F2;
-      --rest: #8B5CF6;
-      --rest-soft: #F5F3FF;
-      
-      --r-card: 20px;
+    <main class="view" id="view" tabindex="-1"></main>
+
+    <nav class="tabbar" id="nav-tab" aria-label="Navigation mobile"></nav>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>      --r-card: 20px;
       --r-ctrl: 12px;
       --r-pill: 999px;
       --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
