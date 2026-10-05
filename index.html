@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sport Journal / FitTrack</title>
+  <title>Sport Journal</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <div class="shell">
@@ -26,44 +25,5 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
-</body>
-</html>          <form id="welcome-form">
-            <label style="font-size:0.85rem; font-weight:600; color:var(--muted);">Votre Prénom ou Nom *</label>
-            <input type="text" id="name" required placeholder="Ex. Julie">
-            
-            <label style="font-size:0.85rem; font-weight:600; color:var(--muted);">Poids actuel (kg)</label>
-            <input type="number" step="0.1" id="weight" placeholder="Ex. 65">
-            
-            <label style="font-size:0.85rem; font-weight:600; color:var(--muted);">Objectif principal</label>
-            <input type="text" id="goal" placeholder="Ex. Préparer un semi-marathon">
-            
-            <button type="submit">Commencer mon journal</button>
-          </form>
-        `;
-
-        document.getElementById('welcome-form').onsubmit = (e) => {
-          e.preventDefault();
-          const newProfile = {
-            name: document.getElementById('name').value.trim(),
-            weight: document.getElementById('weight').value,
-            goal: document.getElementById('goal').value.trim()
-          };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(newProfile));
-          render();
-        };
-      } else {
-        app.innerHTML = `
-          <h1>Bonjour ${profile.name} !</h1>
-          <p class="muted">Objectif : ${profile.goal || 'Aucun objectif défini'}</p>
-          <p class="muted">Poids : ${profile.weight ? profile.weight + ' kg' : 'Non renseigné'}</p>
-          <hr style="border:0; border-top:1px solid var(--line); margin:20px 0;">
-          <p>Votre tableau de bord est prêt à l'emploi.</p>
-          <button class="btn-danger" onclick="localStorage.removeItem('${STORAGE_KEY}'); location.reload();">Réinitialiser le profil</button>
-        `;
-      }
-    }
-
-    render();
-  </script>
 </body>
 </html>
