@@ -137,6 +137,48 @@ const refreshView = () => {
   const id = PAGES.some((p) => p.id === Router.current()) ? Router.current() : PAGES[0].id;
   if (Views[id]) Views[id](document.getElementById('view'));
 };
+/* ---------- 5a. VUE ACCUEIL (TABLEAU DE BORD) ---------- */
+Views.accueil = (el) => {
+  const page = PAGES[0], s = Store.get();
+  const profile = s.profile;
+  const sessions = s.sessions.filter(se => se.status === 'done');
+  
+  const totalDist = sessions.reduce((acc, se) => acc + (parseFloat(se.distance) || 0), 0);
+  const totalMins = sessions.reduce((acc, se) => acc + (parseInt(se.duration) || 0), 0);
+  const totalCount = sessions.length;
+
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>Bonjour ${profile ? esc(profile.name) : 'sportif'} !</h1>
+      <p>${page.sub}</p>
+    </header>
+
+    <div class="grid3" style="margin-bottom:24px;">
+      <div class="card" style="padding:16px;">
+        <h2>${totalCount}</h2>
+        <p class="muted">Séances totales</p>
+      </div>
+      <div class="card" style="padding:16px;">
+        <h2>${formatDuration(totalMins)}</h2>
+        <p class="muted">Temps d'effort</p>
+      </div>
+      <div class="card" style="padding:16px;">
+        <h2>${totalDist.toFixed(1)} km</h2>
+        <p class="muted">Distance parcourue</p>
+      </div>
+    </div>
+
+    <section class="card stack">
+      <h2>Dernières séances</h2>
+      ${
+        sessions.length 
+          ? `<div class="list">${sessions.slice(-3).reverse().map(s => sessionItem(s, true)).join('')}</div>`
+          : `<p class="muted">${page.empty[0]}.${page.empty[1]}</p>`
+      }
+    </section>
+  `;
+  bindSessionActions(el);
+}; 
 
 /* ---------- 5b. ASSISTANT DE CONFIGURATION ---------- */
 const DEFAULT_SPORTS = ['Course', 'Natation', 'Cyclisme', 'Musculation', 'Pilates',
@@ -713,17 +755,26 @@ const Router = {
 };
 
 /* ---------- 7. INITIALISATION GLOBALE ---------- */
+/* ---------- 7. INITIALISATION GLOBALE ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   UI.applyTheme();
-  
-  const themeBtn = document.getElementById('theme-btn');
-  if (themeBtn) themeBtn.onclick = () => UI.cycleTheme();
+  Router.init();
 
-  if (!Store.get().profile) {
-    Wizard.open(false, 0);
+  const navContainer = document.getElementById('nav');
+  if (navContainer) {
+    navContainer.innerHTML = PAGES.map(p => `
+      <a href="#${p.id}" class="nav-item">
+        ${icon(p.icon)}
+        <span>${p.label}</span>
+      </a>
+    `).join('');
   }
 
-  Router.init();
+  if (!Store.get().profile) {
+    Wizard.open();
+  }
+
+  Router.render();
 });
 /* ---------- 5a. VUE ACCUEIL (TABLEAU DE BORD) ---------- */
 Views.accueil = (el) => {
@@ -767,3 +818,234 @@ Views.accueil = (el) => {
   `;
   bindSessionActions(el);
 };
+/* ---------- 5b. VUE SESSIONS / JOURNAL ---------- */
+Views.sessions = (el) => {
+  const page = PAGES[1], s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>${page.label}</h1>
+      <p>${page.sub}</p>
+    </header>
+    <div class="toolbar" style="margin-bottom: 20px;">
+      <button class="btn" id="new-session-btn">${icon('plus')} Ajouter une séance</button>
+    </div>
+    <div class="card stack">
+      <h2>Toutes les séances</h2>
+      ${
+        s.sessions.length
+          ? `<div class="list">${s.sessions.slice().reverse().map(se => sessionItem(se)).join('')}</div>`
+          : `<p class="muted">Aucune séance enregistrée pour le moment.</p>`
+      }
+    </div>
+  `;
+  el.querySelector('#new-session-btn').onclick = () => SessionModal.open();
+  bindSessionActions(el);
+};
+
+/* ---------- 5c. VUE CALENDRIER ---------- */
+Views.calendrier = (el) => {
+  const page = PAGES[2], s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>${page.label}</h1>
+      <p>${page.sub}</p>
+    </header>
+    <section class="card empty">
+      ${icon(page.icon)}
+      <h2>Calendrier des entraînements</h2>
+      <p>Visualisez vos séances planifiées et passées sous forme de calendrier mensuel.</p>
+      <div class="toolbar" style="justify-content:center; margin-top:16px;">
+        <button class="btn" id="cal-add-btn">Planifier une séance</button>
+      </div>
+    </section>
+  `;
+  el.querySelector('#cal-add-btn').onclick = () => SessionModal.open();
+};
+
+/* ---------- 5d. VUE OBJECTIFS ---------- */
+Views.objectifs = (el) => {
+  const page = PAGES[3], s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>${page.label}</h1>
+      <p>${page.sub}</p>
+    </header>
+    <div class="toolbar" style="margin-bottom: 20px;">
+      <button class="btn" id="new-goal-btn">${icon('plus')} Nouvel objectif</button>
+    </div>
+    <div class="grid3">
+      ${
+        s.goals.length
+          ? s.goals.map(g => `
+              <div class="card stack" style="padding:16px;">
+                <h3>${esc(g.title)}</h3>
+                <p class="muted">${esc(g.description || '')}</p>
+                <div class="progress-bar-container" style="background:var(--border); border-radius:4px; height:8px; margin-top:8px;">
+                  <div style="background:var(--primary); width:${g.progress || 0}%; height:100%; border-radius:4px;"></div>
+                </div>
+              </div>
+            `).join('')
+          : `<div class="card empty" style="grid-column: span 3;">${icon(page.icon)}<h2>Aucun objectif défini</h2><p>Fixez-vous des buts précis pour progresser.</p></div>`
+      }
+    </div>
+  `;
+  el.querySelector('#new-goal-btn').onclick = () => {
+    const title = prompt("Titre de l'objectif :");
+    if (title) {
+      s.goals.push({ id: Date.now(), title, progress: 0 });
+      Store.save();
+      Router.render();
+    }
+  };
+};
+
+/* ---------- 5e. VUE SPORTS ---------- */
+Views.sports = (el) => {
+  const page = PAGES[4], s = Store.get();
+  el.innerHTML = `
+    <header class="page-head">
+      <h1>${page.label}</h1>
+      <p>${page.sub}</p>
+    </header>
+    <div class="toolbar" style="margin-bottom: 20px;">
+      <button class="btn" id="new-sport-btn">${icon('plus')} Ajouter un sport</button>
+    </div>
+    <div class="grid3">
+      ${
+        s.sports.map(sp => `
+          <div class="card stack" style="padding:16px; display:flex; align-items:center; gap:12px;">
+            <div style="font-size:24px;">${icon(sp.icon || 'activity')}</div>
+            <div>
+              <h3>${esc(sp.name)}</h3>
+              <p class="muted">${sp.category || 'Général'}</p>
+            </div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+  el.querySelector('#new-sport-btn').onclick = () => {
+    const name = prompt("Nom du sport :");
+    if (name) {
+      s.sports.push({ id: Date.now(), name, icon: 'activity' });
+      Store.save();
+      Router.render();
+    }
+  };
+};
+
+/* ---------- 5f. VUE RECORDS ---------- */
+Views.records = (el) => {
+  const page = PAGES[5], s = Store.get();
+  const doneSessions = s.sessions.filter(se => se.status === 'done');
+
+  let maxDistance = 0;
+  let maxDuration = 0;
+  doneSessions.forEach(se => {
+    const dist = parseFloat(se.distance) || 0;
+    const dur = parseInt(se.duration, 10) || 0;
+    if (dist > maxDistance) maxDistance = dist;
+    if (dur > maxDuration) maxDuration = dur;
+  });
+
+  el.innerHTML = `
+    <header class="page-head"><h1>${page.label}</h1><p>${page.sub}</p></header>
+    <div class="grid3" style="margin-bottom:24px;">
+      <div class="card" style="padding:16px;">
+        <h2>${maxDistance.toFixed(1)} km</h2>
+        <p class="muted">Plus longue distance</p>
+      </div>
+      <div class="card" style="padding:16px;">
+        <h2>${formatDuration(maxDuration)}</h2>
+        <p class="muted">Séance la plus longue</p>
+      </div>
+    </div>
+    <section class="card empty">
+      ${icon(page.icon)}
+      <h2>Records et Badges</h2>
+      <p>Vos meilleures performances s'afficheront ici automatiquement.</p>
+    </section>
+  `;
+};
+
+/* ---------- 5g. VUE PARAMÈTRES ---------- */
+Views.parametres = (el) => {
+  const page = PAGES[6], s = Store.get();
+  const p = s.profile || {};
+
+  el.innerHTML = `
+    <header class="page-head"><h1>${page.label}</h1><p>${page.sub}</p></header>
+    <div class="card stack" style="margin-bottom:20px;">
+      <h2>Mon Profil</h2>
+      <p><b>Nom :</b> ${esc(p.name || 'Non renseigné')}</p>
+      <p><b>Objectif principal :</b> ${esc(p.goal || 'Non renseigné')}</p>
+      <div class="toolbar"><button class="btn btn-ghost" id="edit-profile">Modifier mon profil</button></div>
+    </div>
+    <div class="card stack">
+      <h2>Données</h2>
+      <div class="toolbar">
+        <button class="btn btn-ghost" id="export-data">Exporter les données (JSON)</button>
+        <button class="btn btn-ghost" id="reset-data" style="color:var(--cancelled);">Réinitialiser l'application</button>
+      </div>
+    </div>
+  `;
+
+  el.querySelector('#edit-profile').onclick = () => Wizard.open(true);
+  el.querySelector('#export-data').onclick = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(Store.get(), null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `sportjournal_backup_${todayStr()}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+    UI.toast('Exportation réussie.');
+  };
+  el.querySelector('#reset-data').onclick = () => {
+    if (confirm('Attention : toutes vos données seront effacées. Êtes-vous sûr ?')) {
+      localStorage.removeItem(APP.storageKey);
+      window.location.reload();
+    }
+  };
+};
+
+/* ---------- 6. ROUTEUR ET NAVIGATION ---------- */
+const Router = {
+  current() {
+    const hash = window.location.hash.slice(1);
+    return PAGES.some(p => p.id === hash) ? hash : PAGES[0].id;
+  },
+  render() {
+    const id = this.current();
+    document.querySelectorAll('nav a, .nav-item').forEach(a => {
+      const target = a.getAttribute('href')?.slice(1);
+      if (target) a.classList.toggle('active', target === id);
+    });
+    refreshView();
+  },
+  init() {
+    window.addEventListener('hashchange', () => this.render());
+  }
+};
+
+/* ---------- 7. INITIALISATION GLOBALE ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  UI.applyTheme();
+  Router.init();
+
+  const navContainer = document.getElementById('nav');
+  if (navContainer) {
+    navContainer.innerHTML = PAGES.map(p => `
+      <a href="#${p.id}" class="nav-item">
+        ${icon(p.icon)}
+        <span>${p.label}</span>
+      </a>
+    `).join('');
+  }
+
+  if (!Store.get().profile) {
+    Wizard.open();
+  }
+
+  Router.render();
+});
