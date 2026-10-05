@@ -1,4 +1,4 @@
-'use strict';
+const APP = { storageKey: 'sportjournal:v5' };
 
 /* ==========================================================
    SPORT JOURNAL – app.js (Personnalisable & Vierge)
