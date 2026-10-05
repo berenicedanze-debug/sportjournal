@@ -1,66 +1,599 @@
-'use strict';
+// ======================
+// SPORT JOURNAL APP
+// ======================
 
-const APP = { storageKey: 'sportjournal:v10' };
+let profile = JSON.parse(localStorage.getItem("sj_profile")) || null;
+let sessions = JSON.parse(localStorage.getItem("sj_sessions")) || [];
+let darkMode = JSON.parse(localStorage.getItem("sj_darkmode")) || false;
 
-const PAGES = [
-  { id: 'accueil',     label: 'Accueil',      icon: 'home',     sub: 'Votre tableau de bord.' },
-  { id: 'calendrier',  label: 'Calendrier',   icon: 'calendar', sub: 'Planifiez.' },
-  { id: 'seances',     label: 'Séances',      icon: 'run',      sub: 'Vos entraînements.' },
-  { id: 'objectifs',   label: 'Objectifs',    icon: 'target',   sub: 'Suivi.' },
-  { id: 'statistiques',label: 'Stats',        icon: 'chart',    sub: 'Chiffres.' },
-  { id: 'parametres',  label: 'Réglages',     icon: 'gear',     sub: 'Profil.' }
-];
+let currentDate = new Date();
 
-const ICONS = {
-  home:     '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
-  calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',
-  run:      '<circle cx="14" cy="4.5" r="2"/><path d="M8 21l3-6 3 2v4M11 15l-1-5 4-2 3 4h3M6 12l4-4"/>',
-  target:   '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
-  chart:    '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-  gear:     '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
-  plus:     '<path d="M12 5v14M5 12h14"/>',
-  left:     '<path d="M15 6l-6 6 6 6"/>',
-  right:    '<path d="M9 6l6 6-6 6"/>',
-  sun:      '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
-  moon:     '<path d="M20 14a8 8 0 1 1-10-10 6.5 6.5 0 0 0 10 10z"/>',
-  auto:     '<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/>'
-};
-const icon = (name) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+// ======================
+// ELEMENTS
+// ======================
 
-const STATUS = {
-  done:      { label: 'Réalisée', css: '#10b981' },
-  planned:   { label: 'Prévue',   css: '#f59e0b' },
-  cancelled: { label: 'Annulée',  css: '#ef4444' },
-  rest:      { label: 'Repos',    css: '#64748b' }
-};
+const welcomeModal = document.getElementById("welcomeModal");
+const profileForm = document.getElementById("profileForm");
 
-const EFFORTS = ['Endurance', 'Fractionné', 'Force', 'Récupération', 'Technique', 'Compétition'];
-const DEFAULT_SPORTS = ['Course à pied', 'Cyclisme', 'Natation', 'Musculation', 'Pilates', 'Yoga', 'Tennis', 'Marche'];
+const welcomeText = document.getElementById("welcomeText");
 
-const pad = (n) => String(n).padStart(2, '0');
-const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const todayStr = () => ymd(new Date());
-const fmtDate = (str) => new Date(str + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+const sessionModal = document.getElementById("sessionModal");
+const sessionForm = document.getElementById("sessionForm");
 
-const Cal = { y: new Date().getFullYear(), m: new Date().getMonth(), sel: todayStr() };
+const addSessionBtn = document.getElementById("addSessionBtn");
+const closeSessionModal = document.getElementById("closeSessionModal");
 
-const Store = (() => {
-  const defaults = () => ({
-    profile: { name: '', weight: '', goal: '' },
-    settings: { theme: 'auto' },
-    sports: DEFAULT_SPORTS.map(name => ({ id: name.toLowerCase(), name })),
-    sessions: [],
-    goals: []
-  });
+const themeToggle = document.getElementById("themeToggle");
 
-  const load = () => {
-    try {
-      const raw = localStorage.getItem(APP.storageKey);
-      return raw ? { ...defaults(), ...JSON.parse(raw) } : defaults();
-    } catch (e) { return defaults(); }
-  };
+const settingsForm = document.getElementById("settingsForm");
+const resetBtn = document.getElementById("resetApp");
 
-  let state = load();
+// ======================
+// INIT
+// ======================
+
+document.addEventListener("DOMContentLoaded", () => {
+    initializeApp();
+});
+
+function initializeApp() {
+    applyTheme();
+
+    if (!profile) {
+        showWelcomeModal();
+    } else {
+        loadProfile();
+    }
+
+    setupNavigation();
+    setupEvents();
+
+    renderDashboard();
+    renderSessions();
+    renderCalendar();
+    renderGoal();
+    renderStats();
+}
+
+// ======================
+// STORAGE
+// ======================
+
+function saveProfile() {
+    localStorage.setItem("sj_profile", JSON.stringify(profile));
+}
+
+function saveSessions() {
+    localStorage.setItem("sj_sessions", JSON.stringify(sessions));
+}
+
+// ======================
+// WELCOME
+// ======================
+
+function showWelcomeModal() {
+    welcomeModal.classList.add("show");
+}
+
+profileForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    profile = {
+        name: document.getElementById("userName").value.trim(),
+        weight: document.getElementById("userWeight").value,
+        goal: document.getElementById("userGoal").value.trim()
+    };
+
+    saveProfile();
+
+    welcomeModal.classList.remove("show");
+
+    loadProfile();
+    renderGoal();
+});
+
+function loadProfile() {
+    if (!profile) return;
+
+    welcomeText.textContent = `Bienvenue ${profile.name}`;
+
+    const editName = document.getElementById("editName");
+    const editWeight = document.getElementById("editWeight");
+    const editGoal = document.getElementById("editGoal");
+
+    if (editName) editName.value = profile.name;
+    if (editWeight) editWeight.value = profile.weight;
+    if (editGoal) editGoal.value = profile.goal;
+}
+
+// ======================
+// NAVIGATION
+// ======================
+
+function setupNavigation() {
+
+    const buttons = document.querySelectorAll(".nav-btn");
+
+    buttons.forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const view = button.dataset.view;
+
+            document.querySelectorAll(".view").forEach(section => {
+                section.classList.remove("active-view");
+            });
+
+            document.querySelectorAll(".nav-btn").forEach(btn => {
+                btn.classList.remove("active");
+            });
+
+            const page = document.getElementById(view);
+
+            if (page) {
+                page.classList.add("active-view");
+            }
+
+            document
+                .querySelectorAll(`.nav-btn[data-view="${view}"]`)
+                .forEach(btn => btn.classList.add("active"));
+
+        });
+
+    });
+
+}
+
+// ======================
+// EVENTS
+// ======================
+
+function setupEvents() {
+
+    if (addSessionBtn) {
+        addSessionBtn.addEventListener("click", openNewSession);
+    }
+
+    if (closeSessionModal) {
+        closeSessionModal.addEventListener("click", () => {
+            sessionModal.classList.remove("show");
+        });
+    }
+
+    if (sessionForm) {
+        sessionForm.addEventListener("submit", saveSession);
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener("click", toggleTheme);
+    }
+
+    if (settingsForm) {
+
+        settingsForm.addEventListener("submit", (e) => {
+
+            e.preventDefault();
+
+            profile.name = document.getElementById("editName").value;
+            profile.weight = document.getElementById("editWeight").value;
+            profile.goal = document.getElementById("editGoal").value;
+
+            saveProfile();
+
+            loadProfile();
+            renderGoal();
+
+            alert("Profil mis à jour.");
+
+        });
+
+    }
+
+    if (resetBtn) {
+
+        resetBtn.addEventListener("click", () => {
+
+            const confirmed = confirm(
+                "Voulez-vous vraiment réinitialiser l'application ?"
+            );
+
+            if (!confirmed) return;
+
+            localStorage.clear();
+
+            location.reload();
+
+        });
+
+    }
+
+    const prevMonth = document.getElementById("prevMonth");
+    const nextMonth = document.getElementById("nextMonth");
+
+    if (prevMonth) {
+        prevMonth.addEventListener("click", () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+    }
+
+    if (nextMonth) {
+        nextMonth.addEventListener("click", () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+}
+
+// ======================
+// THEME
+// ======================
+
+function applyTheme() {
+
+    if (darkMode) {
+        document.body.classList.add("dark");
+        themeToggle.textContent = "☀️";
+    } else {
+        document.body.classList.remove("dark");
+        themeToggle.textContent = "🌙";
+    }
+
+}
+
+function toggleTheme() {
+
+    darkMode = !darkMode;
+
+    localStorage.setItem(
+        "sj_darkmode",
+        JSON.stringify(darkMode)
+    );
+
+    applyTheme();
+
+}
+
+// ======================
+// SESSIONS
+// ======================
+
+function openNewSession() {
+
+    document.getElementById("sessionForm").reset();
+
+    document.getElementById("sessionId").value = "";
+
+    sessionModal.classList.add("show");
+
+}
+
+function saveSession(event) {
+
+    event.preventDefault();
+
+    const id = document.getElementById("sessionId").value;
+
+    const sessionData = {
+        id: id || Date.now().toString(),
+        date: document.getElementById("sessionDate").value,
+        activity: document.getElementById("sessionActivity").value,
+        distance: Number(
+            document.getElementById("sessionDistance").value || 0
+        ),
+        duration: Number(
+            document.getElementById("sessionDuration").value || 0
+        ),
+        status: document.getElementById("sessionStatus").value
+    };
+
+    if (id) {
+
+        sessions = sessions.map(session =>
+            session.id === id ? sessionData : session
+        );
+
+    } else {
+
+        sessions.push(sessionData);
+
+    }
+
+    saveSessions();
+
+    sessionModal.classList.remove("show");
+
+    renderSessions();
+    renderDashboard();
+    renderCalendar();
+    renderStats();
+}
+
+function renderSessions() {
+
+    const container = document.getElementById("sessionsContainer");
+
+    if (!container) return;
+
+    if (sessions.length === 0) {
+
+        container.innerHTML = `
+            <p>Aucune séance enregistrée.</p>
+        `;
+
+        return;
+    }
+
+    container.innerHTML = "";
+
+    sessions.forEach(session => {
+
+        const statusClass = session.status
+            .toLowerCase()
+            .replace("é", "e");
+
+        const card = document.createElement("div");
+
+        card.className = "session-card";
+
+        card.innerHTML = `
+            <div class="session-header">
+                <div class="session-title">
+                    ${session.activity}
+                </div>
+
+                <span class="status ${statusClass}">
+                    ${session.status}
+                </span>
+            </div>
+
+            <div class="session-info">
+                Date : ${session.date}<br>
+                Distance : ${session.distance} km<br>
+                Durée : ${session.duration} min
+            </div>
+
+            <div class="session-actions">
+                <button class="btn" onclick="editSession('${session.id}')">
+                    Modifier
+                </button>
+
+                <button class="btn danger" onclick="deleteSession('${session.id}')">
+                    Supprimer
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+
+    });
+
+}
+
+function editSession(id) {
+
+    const session = sessions.find(
+        item => item.id === id
+    );
+
+    if (!session) return;
+
+    document.getElementById("sessionId").value = session.id;
+    document.getElementById("sessionDate").value = session.date;
+    document.getElementById("sessionActivity").value = session.activity;
+    document.getElementById("sessionDistance").value = session.distance;
+    document.getElementById("sessionDuration").value = session.duration;
+    document.getElementById("sessionStatus").value = session.status;
+
+    sessionModal.classList.add("show");
+
+}
+
+function deleteSession(id) {
+
+    const confirmed = confirm(
+        "Supprimer cette séance ?"
+    );
+
+    if (!confirmed) return;
+
+    sessions = sessions.filter(
+        session => session.id !== id
+    );
+
+    saveSessions();
+
+    renderSessions();
+    renderDashboard();
+    renderCalendar();
+    renderStats();
+
+}
+
+// ======================
+// DASHBOARD
+// ======================
+
+function renderDashboard() {
+
+    const totalSessions = sessions.length;
+
+    const totalDistance = sessions.reduce(
+        (sum, session) => sum + Number(session.distance),
+        0
+    );
+
+    const totalDuration = sessions.reduce(
+        (sum, session) => sum + Number(session.duration),
+        0
+    );
+
+    document.getElementById("totalSessions").textContent =
+        totalSessions;
+
+    document.getElementById("totalDistance").textContent =
+        `${totalDistance.toFixed(1)} km`;
+
+    document.getElementById("totalDuration").textContent =
+        `${totalDuration} min`;
+
+    const summary = document.getElementById(
+        "dashboardSummary"
+    );
+
+    summary.innerHTML = `
+        <p>
+            Vous avez enregistré
+            <strong>${totalSessions}</strong>
+            séance(s).
+        </p>
+    `;
+}
+
+// ======================
+// OBJECTIF
+// ======================
+
+function renderGoal() {
+
+    const goalDisplay =
+        document.getElementById("goalDisplay");
+
+    if (!goalDisplay || !profile) return;
+
+    goalDisplay.innerHTML = `
+        🎯 ${profile.goal}
+    `;
+}
+
+// ======================
+// STATS
+// ======================
+
+function renderStats() {
+
+    const container =
+        document.getElementById("statsContent");
+
+    if (!container) return;
+
+    const completed = sessions.filter(
+        s => s.status === "Réalisée"
+    ).length;
+
+    const planned = sessions.filter(
+        s => s.status === "Prévue"
+    ).length;
+
+    const cancelled = sessions.filter(
+        s => s.status === "Annulée"
+    ).length;
+
+    container.innerHTML = `
+        <div class="card">
+            Séances réalisées : ${completed}
+        </div>
+
+        <div class="card">
+            Séances prévues : ${planned}
+        </div>
+
+        <div class="card">
+            Séances annulées : ${cancelled}
+        </div>
+    `;
+
+}
+
+// ======================
+// CALENDRIER
+// ======================
+
+function renderCalendar() {
+
+    const grid =
+        document.getElementById("calendarGrid");
+
+    const title =
+        document.getElementById("monthYear");
+
+    if (!grid || !title) return;
+
+    grid.innerHTML = "";
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    title.textContent = currentDate.toLocaleDateString(
+        "fr-FR",
+        {
+            month: "long",
+            year: "numeric"
+        }
+    );
+
+    const firstDay =
+        new Date(year, month, 1);
+
+    const lastDay =
+        new Date(year, month + 1, 0);
+
+    let start =
+        firstDay.getDay();
+
+    start = start === 0 ? 6 : start - 1;
+
+    for (let i = 0; i < start; i++) {
+
+        const empty = document.createElement("div");
+
+        empty.classList.add("calendar-day");
+
+        grid.appendChild(empty);
+
+    }
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+
+        const cell = document.createElement("div");
+
+        cell.classList.add("calendar-day");
+
+        const dateString =
+            `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+        const count =
+            sessions.filter(
+                session => session.date === dateString
+            ).length;
+
+        cell.innerHTML = `
+            <div class="calendar-day-number">
+                ${day}
+            </div>
+
+            ${
+                count > 0
+                    ? `<div class="calendar-badge">${count}</div>`
+                    : ""
+            }
+        `;
+
+        cell.addEventListener("click", () => {
+
+            document.getElementById(
+                "sessionDate"
+            ).value = dateString;
+
+            sessionModal.classList.add("show");
+
+        });
+
+        grid.appendChild(cell);
+
+    }
+
+}  let state = load();
   const save = () => { try { localStorage.setItem(APP.storageKey, JSON.stringify(state)); } catch (e) {} };
 
   return {
