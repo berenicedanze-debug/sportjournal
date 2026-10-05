@@ -258,9 +258,10 @@ Views.statistiques = (el) => {
   const s = Store.get();
   const doneSessions = s.sessions.filter(se => se.status === 'done');
   
-  // Calcul du volume total en heures
+  // Calcul du volume total en heures et en séances
   const totalMinutes = doneSessions.reduce((acc, curr) => acc + (curr.duration || 0), 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
+  const totalCount = doneSessions.length;
 
   el.innerHTML = `
     <header class="page-head">
@@ -272,24 +273,30 @@ Views.statistiques = (el) => {
       <div class="card" style="padding: 20px;">
         <div style="font-size: 0.85rem; color: var(--muted);">Volume Total Réalisé</div>
         <div style="font-size: 2rem; font-weight: bold; margin-top: 8px;">${totalHours} h</div>
-        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 4px;">${doneSessions.length} séance(s) validée(s)</div>
+        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 4px;">${totalCount} séance(s) validée(s)</div>
       </div>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
       <section class="card" style="padding: 24px;">
         <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Répartition par Sport</h3>
-        ${doneSessions.length === 0 ? `<p style="color: var(--muted); font-size: 0.9rem;">Aucune donnée disponible. Enregistrez des séances réalisées pour voir les stats.</p>` : `
+        ${totalCount === 0 ? `
+          <p style="color: var(--muted); font-size: 0.9rem;">Aucune donnée disponible. Enregistrez des séances réalisées pour voir les stats.</p>
+        ` : `
           <div class="stack" style="gap: 12px;">
             ${s.sports.map(sp => {
               const spSessions = doneSessions.filter(se => se.sportId === sp.id);
               const spMins = spSessions.reduce((acc, curr) => acc + (curr.duration || 0), 0);
               const spHours = (spMins / 60).toFixed(1);
               if (spMins === 0) return '';
+              
+              // Récupération sécurisée de l'emoji si la fonction existe
+              const emoji = typeof getSportEmoji === 'function' ? getSportEmoji(sp.id) : '🏅';
+
               return `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line);">
                   <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.25rem;">${getSportEmoji(sp.id)}</span>
+                    <span style="font-size: 1.25rem;">${emoji}</span>
                     <span style="font-weight: 500;">${sp.name}</span>
                   </div>
                   <span style="font-weight: 600; color: var(--accent);">${spHours} h (${spSessions.length} séc.)</span>
@@ -583,19 +590,25 @@ Views.calendrier = (el) => {
 
   attachActions();
 
-  // Clic sur le bouton de création générale
-  el.querySelector('#btn-cal-new').onclick = () => {
-    if (typeof SessionModal !== 'undefined') {
-      SessionModal.open({ date: new Date().toISOString().split('T')[0], duration: 45, status: 'planned', sportId: s.sports[0]?.id });
-    }
-  };
+// Clic sur le bouton de création générale
+  const btnCalNew = el.querySelector('#btn-cal-new');
+  if (btnCalNew) {
+    btnCalNew.onclick = () => {
+      if (typeof SessionModal !== 'undefined') {
+        SessionModal.open({ date: new Date().toISOString().split('T')[0], duration: 45, status: 'planned', sportId: s.sports[0]?.id });
+      }
+    };
+  }
 
-// Clic sur une case spécifique du calendrier (filtrage par jour)
+  // Clic sur une case spécifique du calendrier (filtrage par jour)
   el.querySelectorAll('.day-cell').forEach(cell => {
     cell.addEventListener('click', () => {
       const selectedDate = cell.getAttribute('data-date');
       const daySessions = s.sessions.filter(se => se.date === selectedDate);
       const titleEl = el.querySelector('#detail-title');
+      const container = el.querySelector('#day-sessions-container'); // Vérifiez bien cet ID dans votre HTML
+      
+      if (!titleEl || !container) return;
       
       titleEl.textContent = `Séances du ${selectedDate}`;
 
@@ -615,6 +628,13 @@ Views.calendrier = (el) => {
         return;
       }
 
+      // S'il y a des séances ce jour-là, on les affiche et on active les boutons associés
+      container.innerHTML = daySessions.map(se => renderSessionItem(se, s)).join('');
+      if (typeof attachActions === 'function') {
+        attachActions();
+      }
+    });
+  });
       container.innerHTML = daySessions.map(se => renderSessionItem(se, s)).join('');
       attachActions();
     });
@@ -693,25 +713,56 @@ Views.records = (el) => {
 // --- VUE OBJECTIFS ---
 Views.objectifs = (el) => {
   const s = Store.get();
+  const objectives = s.objectives || [];
+
   el.innerHTML = `
-    <header class="page-head">
-      <h1>Objectifs en cours</h1>
-      <p>Suivez votre progression vers vos buts sportifs.</p>
+    <header class="page-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h1>Objectifs en cours</h1>
+        <p>Suivez votre progression vers vos buts sportifs.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-new-objective" style="font-size: 0.85rem;">+ Nouvel objectif</button>
     </header>
-    <div class="stack" style="gap: 16px;">
-      ${s.objectives.map(obj => `
-        <div class="card" style="padding: 20px;">
-          <div style="display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px;">
-            <span>${obj.title}</span>
-            <span>${obj.current} / ${obj.target} (${obj.progress}%)</span>
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: ${obj.progress}%;"></div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
+
+    ${objectives.length === 0 ? `
+      <div class="card" style="padding: 30px; text-align: center; color: var(--muted);">
+        <p style="margin-bottom: 8px;">Aucun objectif défini pour le moment.</p>
+        <p style="font-size: 0.85rem;">Fixez-vous des buts pour rester motivé dans vos entraînements !</p>
+      </div>
+    ` : `
+      <div class="stack" style="gap: 16px;">
+        ${objectives.map(obj => {
+          const current = obj.current || 0;
+          const target = obj.target || 1;
+          const progress = obj.progress !== undefined ? obj.progress : Math.min(100, Math.round((current / target) * 100));
+
+          return `
+            <div class="card" style="padding: 20px;">
+              <div style="display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px;">
+                <span>${obj.title || 'Objectif'}</span>
+                <span>${current} / ${target} (${progress}%)</span>
+              </div>
+              <div class="progress-bar-container" style="background: var(--line); border-radius: 4px; overflow: hidden; height: 8px;">
+                <div class="progress-bar-fill" style="width: ${progress}%; background: var(--accent); height: 100%;"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `}
   `;
+
+  // Gestion du clic pour ajouter un objectif si la modale existe
+  const btnNewObj = el.querySelector('#btn-new-objective');
+  if (btnNewObj) {
+    btnNewObj.onclick = () => {
+      if (typeof ObjectiveModal !== 'undefined' && typeof ObjectiveModal.open === 'function') {
+        ObjectiveModal.open();
+      } else {
+        alert("La modale de création d'objectif n'est pas encore initialisée.");
+      }
+    };
+  }
 };
 
 // --- VUE SPORTS & CATÉGORIES ---
