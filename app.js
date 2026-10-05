@@ -31,10 +31,451 @@ const ICONS = {
 };
 const icon = (name) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
-/* ---------- 3. STORE (PERSISTANCE DANS LE LOCALSTORAGE) ---------- */
-const DEFAULT_SPORTS = [
-  { id: 'course', name: 'Course à pied', unit: 'km', color: '#2F57F0' },
-  { id: 'cyclisme', name: 'Cyclisme', unit: 'km', color: '#F59E0B' },
+/* ---------- 3. UTILS & CONSTANTES ---------- */
+const STATUS = {
+  done:      { label: 'Réalisée', css: '#1FA971' },
+  planned:   { label: 'Prévue',   css: '#F59E0B' },
+  cancelled: { label: 'Annulée',  css: '#E5484D' },
+  rest:      { label: 'Repos',    css: '#98A2B3' }
+};
+
+const EFFORTS = ['Endurance', 'Fractionné', 'Force', 'Récupération', 'Technique', 'Compétition'];
+const DEFAULT_SPORTS = ['Course à pied', 'Cyclisme', 'Natation', 'Musculation', 'Pilates', 'Yoga', 'Tennis', 'Marche'];
+
+const pad = (n) => String(n).padStart(2, '0');
+const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const fmtDate = (str) => new Date(str + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+const Cal = { y: new Date().getFullYear(), m: new Date().getMonth(), sel: todayStr() };
+
+/* ---------- 4. STORE ---------- */
+const Store = (() => {
+  const defaults = () => ({
+    version: 2,
+    profile: { name: 'Béré', birth: '', sex: '', height: '', weight: '', target: '', goal: '' },
+    settings: { theme: 'auto' },
+    sports: DEFAULT_SPORTS.map(name => ({ id: name.toLowerCase(), name })),
+    sessions: [
+      { id: 's1', date: todayStr(), sport: 'Course à pied', status: 'done', effort: 'Fractionné', duration: 45, distance: 8.5, intensity: 8, notes: 'Bonne séance au parc.' },
+      { id: 's2', date: '2026-10-02', sport: 'Cyclisme', status: 'done', effort: 'Endurance', duration: 90, distance: 35, intensity: 6, notes: 'Sortie vélo.' }
+    ],
+    goals: [
+      { id: 'g1', title: 'Courir 100 km ce mois', type: 'distance', target: 100, sport: 'Course à pied', startDate: '2026-10-01', targetDate: '2026-10-31', status: 'active', progress: 0 },
+      { id: 'g2', title: 'Faire 10 séances', type: 'sessions', target: 10, sport: '', startDate: '2026-10-01', targetDate: '2026-10-31', status: 'active', progress: 0 }
+    ],
+    cards: ['stats', 'goals', 'sessions']
+  });
+
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(APP.storageKey);
+      return raw ? { ...defaults(), ...JSON.parse(raw) } : defaults();
+    } catch (e) { return defaults(); }
+  };
+
+  let state = load();
+  const save = () => { try { localStorage.setItem(APP.storageKey, JSON.stringify(state)); } catch (e) {} };
+
+  return {
+    get: () => state,
+    update(fn) { fn(state); save(); },
+    uid: () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+  };
+})();
+
+/* ---------- 5. UI & ROUTEUR ---------- */
+const UI = {
+  applyTheme() {
+    const t = Store.get().settings.theme;
+    document.documentElement.dataset.theme = t;
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.innerHTML = `${icon(t === 'dark' ? 'moon' : t === 'light' ? 'sun' : 'auto')} Mode ${t}`;
+  },
+  cycleTheme() {
+    const themes = ['auto', 'light', 'dark'];
+    Store.update(s => {
+      const i = themes.indexOf(s.settings.theme);
+      s.settings.theme = themes[(i + 1) % themes.length];
+    });
+    this.applyTheme();
+  },
+  toast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+};
+
+const refreshView = () => Router.render();
+
+/* ---------- 6. FORMULAIRE DE SÉANCE ---------- */
+const SessionForm = {
+  open(session, date) {
+    const day = (session && session.date) || date || todayStr();
+    this.id = session ? session.id : null;
+    this.data = { date: day, sport: 'Course à pied', status: 'done', effort: 'Endurance', duration: 30, distance: 0, intensity: 5, notes: '', ...(session || {}) };
+    this.el = document.createElement('div');
+    this.el.className = 'modal';
+    document.body.appendChild(this.el);
+    this.render();
+  },
+  close() { if (this.el) this.el.remove(); },
+
+  render() {
+    const d = this.data;
+    const sports = Store.get().sports.map(s => s.name);
+    const opts = (list, cur) => list.map(n => `<option ${n === cur ? 'selected' : ''}>${n}</option>`).join('');
+
+    this.el.innerHTML = `
+      <form class="sheet card" style="max-width: 500px; padding: 24px; background: var(--surface); border-radius: 16px;">
+        <h2>${this.id ? 'Modifier la séance' : 'Nouvelle séance'}</h2>
+        <div class="field" style="margin-bottom: 12px;">
+          <label>Statut</label>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            ${Object.entries(STATUS).map(([k, v]) => `
+              <label class="chip"><input type="radio" name="status" value="${k}" ${d.status === k ? 'checked' : ''}> ${v.label}</label>
+            `).join('')}
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <label class="field">Sport<select name="sport">${opts(sports, d.sport)}</select></label>
+          <label class="field">Date<input type="date" name="date" value="${d.date}" required></label>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <label class="field">Effort<select name="effort">${opts(EFFORTS, d.effort)}</select></label>
+          <label class="field">Durée (min)<input type="number" name="duration" value="${d.duration}" min="0"></label>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <label class="field">Distance (km)<input type="number" step="0.1" name="distance" value="${d.distance}" min="0"></label>
+          <label class="field">Intensité (1-10)<input type="number" name="intensity" value="${d.intensity}" min="1" max="10"></label>
+        </div>
+        <label class="field" style="margin-bottom: 16px;">Notes<textarea name="notes" rows="2">${d.notes || ''}</textarea></label>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-ghost" id="cancel-session">Annuler</button>
+          <button type="submit" class="btn">Enregistrer</button>
+        </div>
+      </form>`;
+
+    const form = this.el.querySelector('form');
+    form.querySelector('#cancel-session').onclick = () => this.close();
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const data = {
+        date: f.get('date'),
+        sport: f.get('sport'),
+        status: f.get('status'),
+        effort: f.get('effort'),
+        duration: parseFloat(f.get('duration')) || 0,
+        distance: parseFloat(f.get('distance')) || 0,
+        intensity: parseInt(f.get('intensity'), 10) || 5,
+        notes: f.get('notes').trim()
+      };
+      Store.update(s => {
+        if (this.id) {
+          const idx = s.sessions.findIndex(x => x.id === this.id);
+          if (idx >= 0) s.sessions[idx] = { ...s.sessions[idx], ...data };
+        } else {
+          s.sessions.unshift({ id: Store.uid(), ...data });
+        }
+      });
+      this.close();
+      refreshView();
+      UI.toast('Séance sauvegardée !');
+    };
+  }
+};
+
+/* ---------- 7. FORMULAIRE D'OBJECTIFS ---------- */
+const GoalForm = {
+  open(goal) {
+    this.id = goal ? goal.id : null;
+    this.data = { title: '', type: 'distance', target: 50, sport: 'Course à pied', startDate: todayStr(), targetDate: '', progress: 0, ...(goal || {}) };
+    this.el = document.createElement('div');
+    this.el.className = 'modal';
+    document.body.appendChild(this.el);
+    this.render();
+  },
+  close() { if (this.el) this.el.remove(); },
+
+  render() {
+    const d = this.data;
+    const sports = Store.get().sports.map(s => s.name);
+    this.el.innerHTML = `
+      <form class="sheet card" style="max-width: 450px; padding: 24px; background: var(--surface); border-radius: 16px;">
+        <h2>${this.id ? 'Modifier l\'objectif' : 'Nouvel objectif'}</h2>
+        <label class="field" style="margin-bottom: 12px;">Titre de l'objectif<input name="title" value="${d.title}" required placeholder="Ex. Courir 100km"></label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <label class="field">Type<select name="type">
+            <option value="distance" ${d.type === 'distance' ? 'selected' : ''}>Distance (km)</option>
+            <option value="sessions" ${d.type === 'sessions' ? 'selected' : ''}>Nombre de séances</option>
+            <option value="manual" ${d.type === 'manual' ? 'selected' : ''}>Manuel (%)</option>
+          </select></label>
+          <label class="field">Cible<input type="number" name="target" value="${d.target}"></label>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+          <label class="field">Sport<select name="sport"><option value="">Tous les sports</option>${sports.map(s => `<option ${s === d.sport ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+          <label class="field">Date cible<input type="date" name="targetDate" value="${d.targetDate}"></label>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-ghost" id="cancel-goal">Annuler</button>
+          <button type="submit" class="btn">Enregistrer</button>
+        </div>
+      </form>`;
+
+    const form = this.el.querySelector('form');
+    form.querySelector('#cancel-goal').onclick = () => this.close();
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const data = {
+        title: f.get('title').trim(),
+        type: f.get('type'),
+        target: parseFloat(f.get('target')) || 0,
+        sport: f.get('sport'),
+        targetDate: f.get('targetDate'),
+        startDate: d.startDate || todayStr(),
+        status: 'active'
+      };
+      Store.update(s => {
+        if (this.id) {
+          const idx = s.goals.findIndex(x => x.id === this.id);
+          if (idx >= 0) s.goals[idx] = { ...s.goals[idx], ...data };
+        } else {
+          s.goals.unshift({ id: Store.uid(), progress: 0, ...data });
+        }
+      });
+      this.close();
+      refreshView();
+      UI.toast('Objectif enregistré !');
+    };
+  }
+};
+
+/* ---------- 8. CALCULS DES OBJECTIFS ---------- */
+function getGoalProgress(g) {
+  if (g.type === 'manual') return { pct: g.progress || 0, text: `${g.progress || 0}%` };
+  const done = Store.get().sessions.filter(s => s.status === 'done' && (!g.sport || s.sport === g.sport));
+  if (g.type === 'sessions') {
+    const cur = done.length;
+    const pct = Math.min(100, Math.round((cur / g.target) * 100));
+    return { pct, text: `${cur} / ${g.target} séances` };
+  }
+  if (g.type === 'distance') {
+    const cur = done.reduce((sum, s) => sum + (s.distance || 0), 0);
+    const pct = Math.min(100, Math.round((cur / g.target) * 100));
+    return { pct, text: `${Math.round(cur * 10) / 10} / ${g.target} km` };
+  }
+  return { pct: 0, text: '0%' };
+}
+
+/* ---------- 9. VUES ---------- */
+const Views = {};
+
+Views.accueil = (el) => {
+  const sessions = Store.get().sessions.filter(s => s.status === 'done');
+  const totalKm = sessions.reduce((s, x) => s + (x.distance || 0), 0);
+  const totalMin = sessions.reduce((s, x) => s + (x.duration || 0), 0);
+
+  el.innerHTML = `
+    <header class="page-head"><h1>Bonjour ${Store.get().profile.name || 'Athlète'} !</h1><p>Votre tableau de bord personnel.</p></header>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div class="card"><p class="muted">Séances réalisées</p><h2 style="font-size: 2rem; margin-top: 8px;">${sessions.length}</h2></div>
+      <div class="card"><p class="muted">Distance totale</p><h2 style="font-size: 2rem; margin-top: 8px;">${Math.round(totalKm * 10) / 10} km</h2></div>
+      <div class="card"><p class="muted">Temps cumulé</p><h2 style="font-size: 2rem; margin-top: 8px;">${Math.round((totalMin / 60) * 10) / 10} h</h2></div>
+    </div>
+    <section class="card">
+      <h2>Dernières activités</h2>
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+        ${sessions.slice(0, 3).map(s => `
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+            <div><strong>${s.sport}</strong><p class="muted" style="font-size: 0.85rem;">${fmtDate(s.date)} — ${s.duration} min${s.distance ? `| ${s.distance} km` : ''}</p></div>
+            <span class="chip">${STATUS[s.status]?.label || 'Done'}</span>
+          </div>
+        `).join('')}
+      </div>
+    </section>`;
+};
+
+Views.seances = (el) => {
+  const list = Store.get().sessions;
+  el.innerHTML = `
+    <header class="page-head"><h1>Vos Séances</h1><p>Toutes vos séances enregistrées.</p></header>
+    <div style="margin-bottom: 16px;"><button class="btn" id="btn-new-s">${icon('plus')} Nouvelle séance</button></div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      ${list.map(s => `
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3>${s.sport}</h3>
+            <p class="muted">${fmtDate(s.date)} — ${s.duration} min${s.distance ? `| ${s.distance} km` : ''} | Effort: ${s.effort \vert{}\vert{} 'N/A'}</p>${s.notes ? `<p style="margin-top: 4px; font-size: 0.9rem;">${s.notes}</p>` : ''}
+          </div>
+          <button class="btn btn-ghost" data-edit="${s.id}">Edit</button>
+        </div>
+      `).join('')}
+    </div>`;
+
+  el.querySelector('#btn-new-s').onclick = () => SessionForm.open(null);
+  el.querySelectorAll('[data-edit]').forEach(b => {
+    b.onclick = () => SessionForm.open(Store.get().sessions.find(x => x.id === b.dataset.edit));
+  });
+};
+
+Views.calendrier = (el) => {
+  const sessions = Store.get().sessions;
+  const first = new Date(Cal.y, Cal.m, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const nbDays = new Date(Cal.y, Cal.m + 1, 0).getDate();
+
+  let cells = '<span></span>'.repeat(offset);
+  for (let d = 1; d <= nbDays; d++) {
+    const key = `${Cal.y}-${pad(Cal.m + 1)}-${pad(d)}`;
+    const list = sessions.filter(s => s.date === key);
+    const dots = list.map(s => `<i style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${STATUS[s.status]?.css || '#333'}; margin:1px;"></i>`).join('');
+    cells += `<button class="day" data-date="${key}" style="aspect-ratio:1; padding:4px; border:1px solid var(--line); border-radius:8px; background:var(--surface);"><b>${d}</b><div>${dots}</div></button>`;
+  }
+
+  const dayList = sessions.filter(s => s.date === Cal.sel);
+
+  el.innerHTML = `
+    <header class="page-head"><h1>Calendrier</h1><p>Vue mensuelle de vos séances.</p></header>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <button class="btn btn-ghost" id="cal-prev">${icon('left')}</button>
+      <h2>${first.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h2>
+      <button class="btn btn-ghost" id="cal-next">${icon('right')}</button>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; margin-bottom:24px;">${cells}</div>
+    <div class="card">
+      <h3>Séances du ${fmtDate(Cal.sel)}</h3>
+      <div style="margin-top:12px;">
+        ${dayList.length ? dayList.map(s => `<p><strong>${s.sport}</strong> - ${s.duration} min (${STATUS[s.status]?.label})</p>`).join('') : '<p class="muted">Aucune séance prévue ce jour.</p>'}
+      </div>
+      <button class="btn" id="cal-add" style="margin-top:12px;">${icon('plus')} Ajouter une séance</button>
+    </div>`;
+
+  el.querySelector('#cal-prev').onclick = () => { Cal.m--; if (Cal.m < 0) { Cal.m = 11; Cal.y--; } refreshView(); };
+  el.querySelector('#cal-next').onclick = () => { Cal.m++; if (Cal.m > 11) { Cal.m = 0; Cal.y++; } refreshView(); };
+  el.querySelectorAll('.day').forEach(b => b.onclick = () => { Cal.sel = b.dataset.date; refreshView(); });
+  el.querySelector('#cal-add').onclick = () => SessionForm.open(null, Cal.sel);
+};
+
+Views.objectifs = (el) => {
+  const goals = Store.get().goals;
+  el.innerHTML = `
+    <header class="page-head"><h1>Objectifs</h1><p>Suivez votre progression.</p></header>
+    <div style="margin-bottom:16px;"><button class="btn" id="btn-new-goal">${icon('plus')} Nouvel objectif</button></div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      ${goals.map(g => {
+        const prog = getGoalProgress(g);
+        return `
+          <div class="card">
+            <div style="display:flex; justify-content:space-between;">
+              <h3>${g.title}</h3>
+              <strong>${prog.pct}%</strong>
+            </div>
+            <p class="muted" style="margin-bottom:8px;">${prog.text}${g.sport ? `(${g.sport})` : ''}</p>
+            <div style="height:8px; background:var(--hover); border-radius:4px; overflow:hidden;">
+              <div style="height:100%; width:${prog.pct}%; background:var(--accent);"></div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  el.querySelector('#btn-new-goal').onclick = () => GoalForm.open(null);
+};
+
+Views.statistiques = (el) => {
+  const sessions = Store.get().sessions.filter(s => s.status === 'done');
+  const sportsMap = {};
+  sessions.forEach(s => {
+    sportsMap[s.sport] = (sportsMap[s.sport] || 0) + (s.distance || s.duration || 1);
+  });
+
+  el.innerHTML = `
+    <header class="page-head"><h1>Statistiques</h1><p>Analyse de vos données d'entraînement.</p></header>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:16px;">
+      <div class="card">
+        <h3>Répartition par Sport</h3>
+        <ul style="margin-top:12px; padding-left:20px;">
+          ${Object.entries(sportsMap).map(([k, v]) => `<li><strong>${k}</strong> :${Math.round(v * 10) / 10}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Résumé Global</h3>
+        <p style="margin-top:12px;">Total de séances : <strong>${sessions.length}</strong></p>
+        <p>Distance globale : <strong>${sessions.reduce((a, b) => a + (b.distance || 0), 0)} km</strong></p>
+      </div>
+    </div>`;
+};
+
+Views.records = (el) => {
+  const sessions = Store.get().sessions.filter(s => s.status === 'done');
+  const sports = [...new Set(sessions.map(s => s.sport))];
+
+  el.innerHTML = `
+    <header class="page-head"><h1>Records & Performances</h1><p>Vos meilleures performances calculées par discipline.</p></header>
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      ${sports.map(sp => {
+        const list = sessions.filter(s => s.sport === sp);
+        const maxDist = Math.max(...list.map(s => s.distance || 0));
+        const maxDur = Math.max(...list.map(s => s.duration || 0));
+        return `
+          <div class="card">
+            <h2>${sp}</h2>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+              <div><p class="muted">Plus longue distance</p><strong>${maxDist > 0 ? maxDist + ' km' : 'N/A'}</strong></div>
+              <div><p class="muted">Plus longue durée</p><strong>${maxDur > 0 ? maxDur + ' min' : 'N/A'}</strong></div>
+            </div>
+          </div>`;
+      }).join('') || '<div class="card"><p class="muted">Aucune donnée disponible pour établir des records.</p></div>'}
+    </div>`;
+};
+
+Views.parametres = (el) => {
+  el.innerHTML = `
+    <header class="page-head"><h1>Paramètres</h1><p>Gestion des données.</p></header>
+    <div class="card"><button class="btn btn-ghost" id="btn-reset">Réinitialiser l'application</button></div>`;
+  el.querySelector('#btn-reset').onclick = () => {
+    if (confirm('Voulez-vous tout réinitialiser ?')) {
+      localStorage.removeItem(APP.storageKey);
+      location.reload();
+    }
+  };
+};
+
+/* ---------- 10. INITIALISATION ---------- */
+const Router = {
+  current: () => location.hash.replace('#/', '') || 'accueil',
+  render() {
+    const id = PAGES.some(p => p.id === this.current()) ? this.current() : 'accueil';
+    const view = document.getElementById('view');
+    if (Views[id]) Views[id](view);
+    document.querySelectorAll('[data-page]').forEach(a => {
+      if (a.dataset.page === id) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  }
+};
+
+function buildNav() {
+  const html = PAGES.map(p => `<a href="#/${p.id}" data-page="${p.id}">${icon(p.icon)}<span>${p.label}</span></a>`).join('');
+  document.getElementById('nav-side').innerHTML = html;
+  document.getElementById('nav-tab').innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildNav();
+  UI.applyTheme();
+  document.getElementById('theme-btn').onclick = () => UI.cycleTheme();
+  window.addEventListener('hashchange', () => Router.render());
+  Router.render();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(r => r.forEach(x => x.unregister()));
+  }
+});  { id: 'cyclisme', name: 'Cyclisme', unit: 'km', color: '#F59E0B' },
   { id: 'natation', name: 'Natation', unit: 'm', color: '#06B6D4' },
   { id: 'musculation', name: 'Musculation', unit: 'min', color: '#1FA971' }
 ];
