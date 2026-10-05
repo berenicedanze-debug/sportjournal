@@ -2,10 +2,50 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Test Sport Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Journal</title>
+  <style>
+    body { font-family: sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    input { width: 100%; padding: 10px; margin: 10px 0 20px 0; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; box-sizing: border-box; }
+    button { width: 100%; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  </style>
 </head>
-<body style="background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px;">
-  <h1>Ça fonctionne !</h1>
-  <p>Le site est bien en ligne.</p>
+<body>
+
+  <div class="card" id="app">
+    <h1>Bienvenue</h1>
+    <p>Chargement de votre journal...</p>
+  </div>
+
+  <script>
+    const name = localStorage.getItem('sportjournal_name');
+    const app = document.getElementById('app');
+
+    if (!name) {
+      app.innerHTML = `
+        <h2>Configuration</h2>
+        <p>Veuillez entrer votre prénom pour commencer :</p>
+        <form id="f">
+          <input type="text" id="username" required placeholder="Ex. Julie">
+          <button type="submit">Enregistrer</button>
+        </form>
+      `;
+      document.getElementById('f').onsubmit = (e) => {
+        e.preventDefault();
+        const val = document.getElementById('username').value.trim();
+        if(val) {
+          localStorage.setItem('sportjournal_name', val);
+          location.reload();
+        }
+      };
+    } else {
+      app.innerHTML = `
+        <h1>Bonjour ${name} !</h1>
+        <p>Votre journal de sport est prêt.</p>
+        <button onclick="localStorage.clear(); location.reload();" style="background:#ef4444; margin-top:20px;">Réinitialiser</button>
+      `;
+    }
+  </script>
 </body>
 </html>
