@@ -5,41 +5,23 @@ const Store = {
     if (!data) {
       const initial = {
         user: { name: " ", weight: " ", targetWeight: " " },
-        widgets: {
-          kpi: true,
-          chart: true,
-          upcoming: true,
-          objectives: true,
-          calendar: true,
-          records: true,
-          quote: true,
-          weight: true
-        },
-        sports: [
-          { id: "run", name: "Course à pied", icon: "activity", category: "Cardio", unit: "km", color: "#2f57f0" },
-          { id: "bike", name: "Cyclisme", icon: "compass", category: "Cardio", unit: "km", color: "#10b981" },
-          { id: "swim", name: "Natation", icon: "compass", category: "Cardio", unit: "m", color: "#06b6d4" },
-          { id: "gym", name: "Musculation", icon: "target", category: "Renforcement", unit: "kg", color: "#8b5cf6" },
-          { id: "pilates", name: "Pilate", icon: "target", category: "Souplesse", unit: "min", color: "#f59e0b" },
-          { id: "tennis", name: "Tennis", icon: "activity", category: "Technique", unit: "min", color: "#ec4899" }
-        ],
-        categories: ["Cardio", "Renforcement", "Souplesse", "Compétition", "Récupération", "Technique"],
-        sessions: [
-          { id: 1, sportId: "gym", category: "Renforcement", date: "2026-10-06", duration: 60, performance: 80, status: "planned", intensity: 6, notes: "Séance Chest & Triceps" },
-          { id: 2, sportId: "run", category: "Cardio", date: "2026-10-04", duration: 45, performance: 8.5, status: "done", intensity: 7, notes: "Super sensations matinales !" },
-          { id: 3, sportId: "bike", category: "Cardio", date: "2026-10-01", duration: 75, performance: 32, status: "done", intensity: 8, notes: "Sortie vélo de route" },
-          { id: 4, sportId: "swim", category: "Technique", date: "2026-09-27", duration: 40, performance: 2000, status: "done", intensity: 6, notes: "Educatifs crawl" }
-        ],
-        objectives: [
-          { id: 1, title: "Courir 60 km ce mois", progress: 14, target: 60, current: 8.5 },
-          { id: 2, title: "12 Séances d'entraînement", progress: 17, target: 12, current: 2 },
-          { id: 3, title: "Souplesse & Stretch", progress: 45, target: 100, current: 45 }
-        ],
-        records: [
-          { id: 1, title: "Développé Couché Max", value: "95 kg", date: "2026-09-15" },
-          { id: 2, title: "Meilleur 5km", value: "21 min 30s", date: "2026-09-25" }
-        ]
-      };
+       // Remplacez l'objet initial dans Store.get() par ceci :
+const initial = {
+  user: { name: "Utilisateur", weight: 70, targetWeight: 65 },
+  widgets: { kpi: true, chart: true, upcoming: true, objectives: true, quote: true, weight: true },
+  sports: [
+    { id: "run", name: "Course à pied", category: "Cardio", unit: "km", color: "#2f57f0" },
+    { id: "bike", name: "Cyclisme", category: "Cardio", unit: "km", color: "#10b981" },
+    { id: "swim", name: "Natation", category: "Cardio", unit: "m", color: "#06b6d4" },
+    { id: "gym", name: "Musculation", category: "Renforcement", unit: "kg", color: "#8b5cf6" },
+    { id: "pilates", name: "Pilate", category: "Souplesse", unit: "min", color: "#f59e0b" },
+    { id: "tennis", name: "Tennis", category: "Technique", unit: "min", color: "#ec4899" }
+  ],
+  categories: ["Cardio", "Renforcement", "Souplesse", "Compétition", "Récupération", "Technique"],
+  sessions: [], // <-- Vierge
+  objectives: [], // <-- Vierge
+  records: [] // <-- Vierge
+};
       localStorage.setItem('fit_track_pro', JSON.stringify(initial));
       return initial;
     }
@@ -277,36 +259,49 @@ Views.accueil = (el) => {
 };
 // --- PARTIE 4 : VUE STATISTIQUES & GRAPHIQUES ---
 Views.statistiques = (el) => {
+  const s = Store.get();
+  const doneSessions = s.sessions.filter(se => se.status === 'done');
+  
+  // Calcul du volume total en heures
+  const totalMinutes = doneSessions.reduce((acc, curr) => acc + (curr.duration || 0), 0);
+  const totalHours = (totalMinutes / 60).toFixed(1);
+
   el.innerHTML = `
     <header class="page-head">
-      <h1>Statistiques & Analyses Graphiques</h1>
-      <p>Graphiques et répartition de vos performances sportives.</p>
+      <h1>Statistiques & Analyses</h1>
+      <p>Analyses dynamiques de vos performances réelles.</p>
     </header>
     
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+      <div class="card" style="padding: 20px;">
+        <div style="font-size: 0.85rem; color: var(--muted);">Volume Total Réalisé</div>
+        <div style="font-size: 2rem; font-weight: bold; margin-top: 8px;">${totalHours} h</div>
+        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 4px;">${doneSessions.length} séance(s) validée(s)</div>
+      </div>
+    </div>
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
       <section class="card" style="padding: 24px;">
-        <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Répartition des séances par Sport</h3>
-        <div style="height: 220px; display: flex; align-items: center; justify-content: center;">
-          <!-- Représentation visuelle type camembert / anneau -->
-          <div style="width: 160px; height: 160px; border-radius: 50%; background: conic-gradient(#2f57f0 0deg 180deg, #10b981 180deg 280deg, #f59e0b 280deg 360deg); display: flex; align-items: center; justify-content: center;">
-            <div style="width: 90px; height: 90px; background: var(--surface); border-radius: 50%;"></div>
+        <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Répartition par Sport</h3>
+        ${doneSessions.length === 0 ? `<p style="color: var(--muted); font-size: 0.9rem;">Aucune donnée disponible. Enregistrez des séances réalisées pour voir les stats.</p>` : `
+          <div class="stack" style="gap: 12px;">
+            ${s.sports.map(sp => {
+              const spSessions = doneSessions.filter(se => se.sportId === sp.id);
+              const spMins = spSessions.reduce((acc, curr) => acc + (curr.duration || 0), 0);
+              const spHours = (spMins / 60).toFixed(1);
+              if (spMins === 0) return '';
+              return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line);">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.25rem;">${getSportEmoji(sp.id)}</span>
+                    <span style="font-weight: 500;">${sp.name}</span>
+                  </div>
+                  <span style="font-weight: 600; color: var(--accent);">${spHours} h (${spSessions.length} séc.)</span>
+                </div>
+              `;
+            }).join('')}
           </div>
-        </div>
-      </section>
-      
-      <section class="card" style="padding: 24px;">
-        <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Volume d'entraînement par Semaine</h3>
-        <div style="height: 220px; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 20px; border-bottom: 1px solid var(--line);">
-          ${['Semaine 1', 'Semaine 2', 'Semaine 3', 'Cette semaine'].map((sem, idx) => {
-            const h = ['50%', '75%', '60%', '85%'][idx];
-            return `
-              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;">
-                <div style="width: 40px; height: ${h}; background: #8b5cf6; border-radius: 6px 6px 0 0;"></div>
-                <span style="font-size: 0.7rem; color: var(--muted);">${sem}</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
+        `}
       </section>
     </div>
   `;
@@ -492,7 +487,7 @@ Views.calendrier = (el) => {
     <header class="page-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
       <div>
         <h1>Calendrier des entraînements</h1>
-        <p>Planifiez et suivez vos séances jour par jour.</p>
+        <p>Planifiez et suivez vos séances jour par jour. Cliquez sur une date pour voir les détails.</p>
       </div>
       <button class="btn btn-primary" id="btn-cal-new">+ Planifier une séance</button>
     </header>
@@ -511,14 +506,14 @@ Views.calendrier = (el) => {
         <div class="wd">Lun</div><div class="wd">Mar</div><div class="wd">Mer</div>
         <div class="wd">Jeu</div><div class="wd">Ven</div><div class="wd">Sam</div><div class="wd">Dim</div>
         
-        <!-- Génération fictive des jours du mois pour l'exemple -->
+        <!-- Génération des jours du mois avec style cliquable -->
         ${Array.from({ length: 31 }, (_, i) => {
           const dayNum = i + 1;
           const dateStr = `2026-10-${dayNum < 10 ? '0' + dayNum : dayNum}`;
           const daySessions = s.sessions.filter(se => se.date === dateStr);
           
           return `
-            <div class="day ${dayNum === 6 ? 'today' : ''}" data-date="${dateStr}">
+            <div class="day day-cell ${dayNum === 6 ? 'today' : ''}" data-date="${dateStr}" style="cursor: pointer;">
               <b>${dayNum}</b>
               <div class="dots">
                 ${daySessions.map(se => `<i style="background: ${se.status === 'done' ? 'var(--done)' : 'var(--planned)'};"></i>`).join('')}
@@ -529,36 +524,105 @@ Views.calendrier = (el) => {
       </div>
     </div>
 
+    <!-- Section dynamique du détail des séances du jour sélectionné -->
     <section class="card" style="padding: 24px;">
-      <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Séances du mois</h3>
-      <div class="stack" style="gap: 12px;">
-        ${s.sessions.map(se => {
-          const sp = s.sports.find(x => x.id === se.sportId);
-          const emoji = getSportEmoji(se.sportId);
-          return `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: var(--surface);">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 1.5rem;">${emoji}</span>
-                <div>
-                  <div style="font-weight: 600;">${sp ? sp.name : 'Séance'} (${se.category})</div>
-                  <div style="font-size: 0.8rem; color: var(--muted);">${se.date} · ${se.duration} min · ${se.notes || 'Aucune note'}</div>
-                </div>
-              </div>
-              <span style="font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: ${se.status === 'done' ? 'rgba(31, 169, 113, 0.1); color: #1fa971;' : 'rgba(245, 158, 11, 0.1); color: #f59e0b;'}">
-                ${se.status === 'done' ? 'RÉALISÉE' : 'PRÉVUE'}
-              </span>
-            </div>
-          `;
-        }).join('')}
+      <h3 id="detail-title" style="margin-top: 0; font-size: 1rem; margin-bottom: 16px;">Séances du mois (ou sélectionnez un jour)</h3>
+      <div id="day-sessions-container" class="stack" style="gap: 12px;">
+        ${s.sessions.length === 0 ? `<p style="color: var(--muted); font-size: 0.9rem;">Aucune séance enregistrée.</p>` : s.sessions.map(se => renderSessionItem(se, s)).join('')}
       </div>
     </section>
   `;
 
+  // Fonction utilitaire interne pour afficher une ligne de séance avec boutons Modifier / Supprimer
+  function renderSessionItem(se, storeData) {
+    const sp = storeData.sports.find(x => x.id === se.sportId);
+    const emoji = typeof getSportEmoji === 'function' ? getSportEmoji(se.sportId) : '🎯';
+    return `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: var(--surface);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.5rem;">${emoji}</span>
+          <div>
+            <div style="font-weight: 600;">${sp ? sp.name : 'Séance'} (${se.category})</div>
+            <div style="font-size: 0.8rem; color: var(--muted);">${se.date} · ${se.duration} min · ${se.notes || 'Aucune note'}</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: ${se.status === 'done' ? 'rgba(31, 169, 113, 0.1); color: #1fa971;' : 'rgba(245, 158, 11, 0.1); color: #f59e0b;'}">
+            ${se.status === 'done' ? 'RÉALISÉE' : 'PRÉVUE'}
+          </span>
+          <button class="btn btn-ghost btn-edit-s" data-id="${se.id}" style="font-size: 0.75rem; padding: 4px 8px;">Modifier</button>
+          <button class="btn btn-ghost btn-del-s" data-id="${se.id}" style="font-size: 0.75rem; padding: 4px 8px; color: var(--cancelled);">Supprimer</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Attacher les actions globales de suppression et modification sur le conteneur
+  const container = el.querySelector('#day-sessions-container');
+
+  function attachActions() {
+    container.querySelectorAll('.btn-edit-s').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const sId = parseInt(btn.getAttribute('data-id'));
+        const sessionToEdit = s.sessions.find(x => x.id === sId);
+        if (sessionToEdit && typeof SessionModal !== 'undefined') {
+          SessionModal.open(sessionToEdit);
+        }
+      };
+    });
+
+    container.querySelectorAll('.btn-del-s').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const sId = parseInt(btn.getAttribute('data-id'));
+        if (confirm("Voulez-vous vraiment supprimer cette séance ?")) {
+          s.sessions = s.sessions.filter(x => x.id !== sId);
+          Store.save(s);
+          router(); // Recharge la vue
+        }
+      };
+    });
+  }
+
+  attachActions();
+
+  // Clic sur le bouton de création générale
   el.querySelector('#btn-cal-new').onclick = () => {
     if (typeof SessionModal !== 'undefined') {
       SessionModal.open({ date: new Date().toISOString().split('T')[0], duration: 45, status: 'planned', sportId: s.sports[0]?.id });
     }
   };
+
+  // Clic sur une case spécifique du calendrier (filtrage par jour)
+  el.querySelectorAll('.day-cell').forEach(cell => {
+    cell.onclick = () => {
+      const selectedDate = cell.getAttribute('data-date');
+      const daySessions = s.sessions.filter(se => se.date === selectedDate);
+      const titleEl = el.querySelector('#detail-title');
+      
+      titleEl.textContent = `Séances du ${selectedDate}`;
+
+      if (daySessions.length === 0) {
+        container.innerHTML = `
+          <p style="color: var(--muted); font-size: 0.9rem;">Aucune séance prévue ce jour-là.</p>
+          <button class="btn btn-primary" id="btn-add-day" style="width: fit-content; font-size: 0.85rem; margin-top: 8px;">+ Ajouter une séance le ${selectedDate}</button>
+        `;
+        const addBtn = container.querySelector('#btn-add-day');
+        if (addBtn) {
+          addBtn.onclick = () => {
+            if (typeof SessionModal !== 'undefined') {
+              SessionModal.open({ date: selectedDate, duration: 45, status: 'planned', sportId: s.sports[0]?.id });
+            }
+          };
+        }
+        return;
+      }
+
+      container.innerHTML = daySessions.map(se => renderSessionItem(se, s)).join('');
+      attachActions();
+    };
+  });
 };
 // --- VUE SÉANCES (Journal complet) ---
 Views.seances = (el) => {
